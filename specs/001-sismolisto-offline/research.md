@@ -38,15 +38,17 @@
 - **Alternatives considered**:
   - *Llamada genérica a 119*: Menos conveniente porque obliga al usuario estresado a recordar la marcación del dígito de opción y el número familiar. La marcación directa ahorra tiempo vital en una emergencia.
 
-## 4. Cálculo Invariante del Porcentaje de Preparación
+## 4. Cálculo Invariante del Porcentaje de Preparación y Estrategia de Pruebas PBT
 
-- **Decision**: Algoritmo puro y desacoplado `calculatePreparationProgress(items: ArticuloMochila[]): ProgressMetric`.
+- **Decision**: Algoritmo puro y desacoplado `calculatePreparationProgress(items: ArticuloMochila[]): ProgressMetric`, validado mediante **Property-Based Testing (PBT)** con la biblioteca `fast-check` en combinación con Vitest.
 - **Rationale**:
   - Formula: $\text{progreso} = \text{total} == 0 ? 0 : \text{Math.round}((\text{completados} / \text{total}) * 100)$.
   - Acotado rígidamente: `Math.max(0, Math.min(100, valor))`.
   - Desglose por categoría disponible reactivamente con la misma invariante matemática, impidiendo división por cero o `NaN`.
+  - La verificación mediante PBT garantiza matemáticamente que para cualquier lista aleatoria de tamaño $N \in [0, 1000]$ con cualquier distribución de estados completados, el porcentaje resultante sea siempre un entero acotado en $[0, 100]$ y nunca genere `NaN` o valores negativos.
 - **Alternatives considered**:
   - *Pesos diferenciados por ítem*: Aunque realista (ej. agua > documentos), agrega complejidad arbitraria para el usuario y no fue solicitado en la especificación. Se utiliza peso equitativo unitario por artículo.
+  - *Solo pruebas unitarias por ejemplos*: Deja sin evaluar combinaciones extremas o arreglos vacíos inesperados; PBT cierra la brecha de verificación requerida por SDD.
 
 ## 5. Resiliencia y Casos Borde
 

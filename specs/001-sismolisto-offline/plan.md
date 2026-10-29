@@ -20,7 +20,7 @@ La persistencia es local e instantánea mediante un adaptador sobre `localStorag
 
 **Storage**: `localStorage` (HTML5 Web Storage API) con adaptador resiliente y fallback en memoria
 
-**Testing**: Vitest + React Testing Library (pruebas unitarias de cálculo invariante, contratos y persistencia)
+**Testing**: Vitest + React Testing Library + Fast-Check (pruebas unitarias, pruebas de integración y Property-Based Testing para invariantes matemáticos y round-trip de persistencia)
 
 **Target Platform**: Navegadores Web Móviles / Desktop y Progressive Web App (PWA) instalable
 
@@ -103,9 +103,12 @@ src/
 
 tests/
 ├── unit/
-│   ├── progressCalculator.test.ts # Pruebas de invariantes de cálculo [0, 100]% y división por cero
-│   ├── phoneValidator.test.ts     # Pruebas de URIs tel:1191 y tel:1192
+│   ├── progressCalculator.test.ts # Pruebas unitarias de cálculo y casos de borde
+│   ├── phoneValidator.test.ts     # Pruebas de validación y URIs tel:1191 y tel:1192
 │   └── storageAdapter.test.ts     # Pruebas de persistencia, corrupción y auto-recuperación
+├── property/                      # Pruebas basadas en propiedades (Property-Based Testing con fast-check)
+│   ├── progressInvariants.pbt.test.ts # Propiedad 1: Invariante matemático del progreso acotado rígidamente a [0, 100]% y sin NaN
+│   └── storageRoundTrip.pbt.test.ts   # Propiedad 2: Round-trip de serialización/deserialización para cualquier estado válido
 └── integration/
     └── sismolistoFlow.test.tsx    # Prueba de interacción extremo a extremo (marcado + plan)
 ```
