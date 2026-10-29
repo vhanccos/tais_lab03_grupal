@@ -16,6 +16,18 @@ export const ZonasSeguras: React.FC<ZonasSegurasProps> = ({
   const [externo, setExterno] = useState(puntoExterno);
   const [guardado, setGuardado] = useState(false);
 
+  const handleInternoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setInterno(val);
+    onSave(val.trim(), externo.trim());
+  };
+
+  const handleExternoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setExterno(val);
+    onSave(interno.trim(), val.trim());
+  };
+
   const handleGuardar = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(interno.trim(), externo.trim());
@@ -42,7 +54,7 @@ export const ZonasSeguras: React.FC<ZonasSegurasProps> = ({
           <input
             type="text"
             value={interno}
-            onChange={(e) => setInterno(e.target.value)}
+            onChange={handleInternoChange}
             placeholder="Ej. Columna estructural en el pasadizo central"
             className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
             maxLength={120}
@@ -58,7 +70,7 @@ export const ZonasSeguras: React.FC<ZonasSegurasProps> = ({
           <input
             type="text"
             value={externo}
-            onChange={(e) => setExterno(e.target.value)}
+            onChange={handleExternoChange}
             placeholder="Ej. Parque central del vecindario, zona sin cables ni postes"
             className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
             maxLength={120}
