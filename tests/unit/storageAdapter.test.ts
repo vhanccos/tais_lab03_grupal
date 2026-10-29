@@ -37,12 +37,16 @@ describe('StorageAdapter', () => {
 
   it('debe recuperarse automáticamente restaurando los valores por defecto si el JSON está corrupto', () => {
     localStorage.setItem(STORAGE_KEY, '{ invalid json corrupt: true');
-    const adapter = new StorageAdapter();
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
+    const adapter = new StorageAdapter();
     const state = adapter.loadState();
+
     expect(state.version).toBe(1);
     expect(state.mochila.articulos.length).toBe(DEFAULT_ARTICULOS_INDECI.length);
     expect(state.mochila.articulos.every(i => !i.completado)).toBe(true);
+
+    warnSpy.mockRestore();
   });
 
   it('debe recuperarse y usar memoria de respaldo si localStorage arroja excepción en guardado', () => {
@@ -50,6 +54,7 @@ describe('StorageAdapter', () => {
     const state = adapter.loadState();
     state.planFamiliar.numeroFamiliarClave = '912345678';
 
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new Error('QuotaExceededError');
     });
@@ -60,5 +65,7 @@ describe('StorageAdapter', () => {
     // Debe seguir funcionando retornando el estado en memoria
     const loaded = adapter.loadState();
     expect(loaded.planFamiliar.numeroFamiliarClave).toBe('912345678');
+
+    errorSpy.mockRestore();
   });
 });
