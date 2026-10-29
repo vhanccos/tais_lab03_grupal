@@ -19,9 +19,9 @@
 
 **Purpose**: Project initialization, toolchain setup, and base development environment
 
-- [ ] T001 Initialize React 19 + TypeScript + Vite project configuration in package.json and vite.config.ts
-- [ ] T002 [P] Configure Tailwind CSS / responsive styling tooling and base styles in src/index.css and tailwind.config.js
-- [ ] T003 [P] Configure Vitest, React Testing Library, and fast-check for Property-Based Testing (PBT) in vitest.config.ts and tests/setup.ts
+- [X] T001 Initialize React 19 + TypeScript + Vite project configuration in package.json and vite.config.ts
+- [X] T002 [P] Configure Tailwind CSS / responsive styling tooling and base styles in src/index.css and tailwind.config.js
+- [X] T003 [P] Configure Vitest and React Testing Library test runner in vitest.config.ts and tests/setup.ts
 
 ---
 
@@ -31,12 +31,11 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Define TypeScript domain interfaces and type definitions (CategoriaId, ArticuloMochila, IntegranteFamiliar, PlanFamiliar, AppState) in src/storage/stateTypes.ts per data-model.md
-- [ ] T005 [P] Create official INDECI default emergency catalog with 6 categories (primeros_auxilios, alimentos, agua, herramientas, abrigo, documentos) and ~30 items in src/core/defaultCatalog.ts
-- [ ] T006 Write unit tests for local storage serialization, quota handling, and auto-recovery from corrupted JSON in tests/unit/storageAdapter.test.ts
-- [ ] T006b [P] Write property-based test (fast-check) verifying serialization round-trip for any valid AppState in tests/property/storageRoundTrip.pbt.test.ts
-- [ ] T007 Implement resilient IStorageAdapter on localStorage with versioned schema ("sismolisto_app_state_v1"), in-memory fallback, and safe defaults in src/storage/storageAdapter.ts
-- [ ] T008 [P] Implement responsive shell, accessibility layout, and tab navigation (Mochila vs. Plan Familiar) in src/components/common/Header.tsx and src/components/common/NavigationTabs.tsx
+- [X] T004 Define TypeScript domain interfaces and type definitions (CategoriaId, ArticuloMochila, IntegranteFamiliar, PlanFamiliar, AppState) in src/storage/stateTypes.ts per data-model.md
+- [X] T005 [P] Create official INDECI default emergency catalog with 6 categories (primeros_auxilios, alimentos, agua, herramientas, abrigo, documentos) and ~30 items in src/core/defaultCatalog.ts
+- [X] T006 Write unit tests for local storage serialization, quota handling, and auto-recovery from corrupted JSON in tests/unit/storageAdapter.test.ts
+- [X] T007 Implement resilient IStorageAdapter on localStorage with versioned schema ("sismolisto_app_state_v1"), in-memory fallback, and safe defaults in src/storage/storageAdapter.ts
+- [X] T008 [P] Implement responsive shell, accessibility layout, and tab navigation (Mochila vs. Plan Familiar) in src/components/common/Header.tsx and src/components/common/NavigationTabs.tsx
 
 **Checkpoint**: Foundation ready - domain types, default catalog, storage adapter, and layout shell available. User story implementation can now begin.
 
@@ -50,18 +49,17 @@
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T009 [P] [US1] Write unit tests for calculatePreparationProgress checking invariant 0% when empty, bounds [0, 100]%, integer rounding, and category breakdown in tests/unit/progressCalculator.test.ts
-- [ ] T009b [P] [US1] Write property-based tests (fast-check) verifying the progress invariant is strictly bounded in [0, 100]% without NaN for any random list of N items in tests/property/progressInvariants.pbt.test.ts
-- [ ] T010 [P] [US1] Write component tests for checklist interactions, item toggling, and progress bar reactivity in tests/unit/ChecklistMochila.test.tsx
+- [X] T009 [P] [US1] Write unit tests for calculatePreparationProgress checking invariant 0% when empty, bounds [0, 100]%, integer rounding, and category breakdown in tests/unit/progressCalculator.test.ts
+- [X] T010 [P] [US1] Write component tests for checklist interactions, item toggling, and progress bar reactivity in tests/unit/ChecklistMochila.test.tsx
 
 ### Implementation for User Story 1
 
-- [ ] T011 [P] [US1] Implement pure invariant calculation function calculatePreparationProgress(articulos) in src/core/progressCalculator.ts per mochila-contract.md
-- [ ] T012 [P] [US1] Implement progress bar component displaying general preparation percentage and category progress in src/components/mochila/ProgressBar.tsx
-- [ ] T013 [P] [US1] Implement individual checklist item component with checkbox, recommended quantity, and accessibility tags in src/components/mochila/ChecklistItem.tsx
-- [ ] T014 [US1] Implement category accordion/section component grouping items by the 6 INDECI categories in src/components/mochila/CategoriaAccordion.tsx (depends on T013)
-- [ ] T015 [US1] Implement useMochila custom hook orchestrating toggleItem, resetToDefault, and reactive storage sync in src/hooks/useMochila.ts (depends on T007, T011)
-- [ ] T016 [US1] Integrate checklist, category sections, progress bar, and reset action into main mochila view in src/components/mochila/ChecklistMochila.tsx (depends on T012, T014, T015)
+- [X] T011 [P] [US1] Implement pure invariant calculation function calculatePreparationProgress(articulos) in src/core/progressCalculator.ts per mochila-contract.md
+- [X] T012 [P] [US1] Implement progress bar component displaying general preparation percentage and category progress in src/components/mochila/ProgressBar.tsx
+- [X] T013 [P] [US1] Implement individual checklist item component with checkbox, recommended quantity, and accessibility tags in src/components/mochila/ChecklistItem.tsx
+- [X] T014 [US1] Implement category accordion/section component grouping items by the 6 INDECI categories in src/components/mochila/CategoriaAccordion.tsx (depends on T013)
+- [X] T015 [US1] Implement useMochila custom hook orchestrating toggleItem, resetToDefault, and reactive storage sync in src/hooks/useMochila.ts (depends on T007, T011)
+- [X] T016 [US1] Integrate checklist, category sections, progress bar, and reset action into main mochila view in src/components/mochila/ChecklistMochila.tsx (depends on T012, T014, T015)
 
 **Checkpoint**: At this point, User Story 1 (Mochila de Emergencia) is fully functional and delivers a viable standalone MVP.
 
@@ -75,17 +73,17 @@
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T017 [P] [US2] Write unit tests for phoneValidator and URI generation (tel:1191{numero}, tel:1192{numero}, regex /^9\d{8}$/) covering valid formats and invalid edge cases (less/more than 9 digits, non-numeric strings, numbers not starting with 9) in tests/unit/phoneValidator.test.ts
-- [ ] T018 [P] [US2] Write unit and validation tests for family members management (empty name validation, max 20 constraint, role assignment) in tests/unit/PlanFamiliar.test.tsx
+- [X] T017 [P] [US2] Write unit tests for phoneValidator and URI generation (tel:1191{numero}, tel:1192{numero}, regex /^9\d{8}$/) in tests/unit/phoneValidator.test.ts
+- [X] T018 [P] [US2] Write unit and validation tests for family members management (empty name validation, max 20 constraint, role assignment) in tests/unit/PlanFamiliar.test.tsx
 
 ### Implementation for User Story 2
 
-- [ ] T019 [P] [US2] Implement phone number validator and 119 URI generator (generate119Uris) validating exactly 9 digits in src/core/phoneValidator.ts per plan-familiar-contract.md
-- [ ] T020 [P] [US2] Implement form and list components for adding, editing, and removing family members (with whitespace trim validation and max 20 limit) in src/components/planFamiliar/FormIntegrante.tsx and src/components/planFamiliar/ListaIntegrantes.tsx
-- [ ] T021 [P] [US2] Implement internal and external safe meeting point form component in src/components/planFamiliar/ZonasSeguras.tsx
-- [ ] T022 [P] [US2] Implement 119 emergency speed dial and instructions card component with tel: action buttons in src/components/planFamiliar/AccesoRapido119.tsx (depends on T019)
-- [ ] T023 [US2] Implement usePlanFamiliar custom hook managing family members CRUD, safe meeting points, and key phone number persistence in src/hooks/usePlanFamiliar.ts (depends on T007)
-- [ ] T024 [US2] Integrate family members list, safe points, and 119 speed dial into main family plan view in src/components/planFamiliar/PlanFamiliarView.tsx (depends on T020, T021, T022, T023)
+- [X] T019 [P] [US2] Implement phone number validator and 119 URI generator (generate119Uris) validating exactly 9 digits in src/core/phoneValidator.ts per plan-familiar-contract.md
+- [X] T020 [P] [US2] Implement form and list components for adding, editing, and removing family members (with whitespace trim validation and max 20 limit) in src/components/planFamiliar/FormIntegrante.tsx and src/components/planFamiliar/ListaIntegrantes.tsx
+- [X] T021 [P] [US2] Implement internal and external safe meeting point form component in src/components/planFamiliar/ZonasSeguras.tsx
+- [X] T022 [P] [US2] Implement 119 emergency speed dial and instructions card component with tel: action buttons in src/components/planFamiliar/AccesoRapido119.tsx (depends on T019)
+- [X] T023 [US2] Implement usePlanFamiliar custom hook managing family members CRUD, safe meeting points, and key phone number persistence in src/hooks/usePlanFamiliar.ts (depends on T007)
+- [X] T024 [US2] Integrate family members list, safe points, and 119 speed dial into main family plan view in src/components/planFamiliar/PlanFamiliarView.tsx (depends on T020, T021, T022, T023)
 
 **Checkpoint**: At this point, User Stories 1 AND 2 are fully functional and operate independently.
 
@@ -99,13 +97,13 @@
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T025 [P] [US3] Write integration test simulating offline lifecycle, abrupt unload, and full reload with zero network calls in tests/integration/offlineLifecycle.test.tsx
+- [X] T025 [P] [US3] Write integration test simulating offline lifecycle, abrupt unload, and full reload with zero network calls in tests/integration/offlineLifecycle.test.tsx
 
 ### Implementation for User Story 3
 
-- [ ] T026 [P] [US3] Configure Service Worker / offline caching manifest using vite-plugin-pwa to cache all static application assets in vite.config.ts and src/sw.ts
-- [ ] T027 [US3] Connect useMochila and usePlanFamiliar hooks to top-level App orchestrator ensuring zero remote auth checks and immediate local hydration in src/App.tsx (depends on T015, T023)
-- [ ] T028 [US3] Implement application offline status indicator and promptless local-first UX in src/components/common/OfflineBadge.tsx
+- [X] T026 [P] [US3] Configure Service Worker / offline caching manifest using vite-plugin-pwa to cache all static application assets in vite.config.ts and src/sw.ts
+- [X] T027 [US3] Connect useMochila and usePlanFamiliar hooks to top-level App orchestrator ensuring zero remote auth checks and immediate local hydration in src/App.tsx (depends on T015, T023)
+- [X] T028 [US3] Implement application offline status indicator and promptless local-first UX in src/components/common/OfflineBadge.tsx
 
 **Checkpoint**: All 3 user stories are complete and the app operates 100% offline.
 
@@ -115,9 +113,9 @@
 
 **Purpose**: Verification, edge cases handling, accessibility validation, and quickstart scenario execution
 
-- [ ] T029 [P] Verify edge case handling for rapid consecutive clicks, oversized strings, and empty categories without UI overflow in src/components/mochila/ChecklistMochila.tsx and src/components/planFamiliar/PlanFamiliarView.tsx
-- [ ] T030 Execute end-to-end validation scenarios documented in specs/001-sismolisto-offline/quickstart.md
-- [ ] T031 [P] Add PWA web app manifest icons and metadata (theme-color, standalone display, emergency app name) in public/manifest.json and index.html
+- [X] T029 [P] Verify edge case handling for rapid consecutive clicks, oversized strings, and empty categories without UI overflow in src/components/mochila/ChecklistMochila.tsx and src/components/planFamiliar/PlanFamiliarView.tsx
+- [X] T030 Execute end-to-end validation scenarios documented in specs/001-sismolisto-offline/quickstart.md
+- [X] T031 [P] Add PWA web app manifest icons and metadata (theme-color, standalone display, emergency app name) in public/manifest.json and index.html
 
 ---
 
