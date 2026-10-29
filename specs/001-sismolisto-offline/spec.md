@@ -40,7 +40,7 @@ Como jefe de familia o miembro del hogar, quiero registrar los integrantes de mi
 1. **Given** que el usuario accede al Módulo de Plan Familiar, **When** ingresa el nombre de un integrante y selecciona o escribe un rol asignado ante sismos, **Then** el integrante queda registrado en la lista familiar del hogar de forma inmediata.
 2. **Given** un integrante previamente registrado, **When** el usuario edita su información o decide eliminarlo de la lista familiar, **Then** la lista se actualiza al instante reflejando la modificación o baja.
 3. **Given** el formulario de zonas seguras, **When** el usuario define y guarda el "Punto de Encuentro Interno" (zona segura dentro de la vivienda) y el "Punto de Encuentro Externo" (zona segura comunitaria o parque), **Then** ambos puntos quedan almacenados y visibles en el resumen del plan familiar.
-4. **Given** la sección de emergencias del Plan Familiar, **When** el usuario consulta las instrucciones de comunicación post-sismo, **Then** el sistema presenta prominentemente el número nacional 119 para mensajes de voz de emergencia y la guía de cómo grabar/escuchar mensajes cuando las redes colapsan.
+4. **Given** la sección de emergencias del Plan Familiar, **When** el usuario ingresa su "Número de Celular Familiar Clave" (9 dígitos), **Then** el sistema presenta dos acciones rápidas de marcación preconfigurada mediante la app de teléfono nativa: "Grabar Mensaje 119" hacia `tel:1191{numero}` y "Escuchar Mensaje 119" hacia `tel:1192{numero}`, junto con las instrucciones oficiales de operación del servicio ante colapso de redes móviles.
 
 ---
 
@@ -67,19 +67,20 @@ Como persona en una zona de desastre o sin cobertura de red móvil/Wi-Fi, quiero
 - **Campos vacíos o incompletos**: Si el usuario intenta agregar un integrante familiar sin nombre o con solo espacios en blanco, el sistema debe bloquear el registro mostrando un mensaje contextual no intrusivo y mantener el foco en el campo requerido sin cerrar la pantalla.
 - **Nombres o textos excesivamente largos**: Si el usuario ingresa descripciones de puntos de encuentro o nombres de familiares extensos, la interfaz debe truncar o ajustar el texto en múltiples líneas sin desbordar los componentes visuales ni degradar el cálculo de preparación.
 - **Acciones concurrentes rápidas (marcado múltiple)**: Si el usuario pulsa consecutivamente y con alta velocidad múltiples casillas del checklist, el cálculo reactivo del porcentaje debe procesar cada cambio de estado sin desfases ni lecturas inconsistentes (desincronización entre checkbox y porcentaje).
-- **Lista de mochila vacía o restauración de valores**: Si el usuario desmarca todos los ítems de la mochila, el cálculo de porcentaje debe descender suave y consistentemente a 0% exacto sin errores aritméticos de división por cero o NaN.
+- **Lista de mochila vacía o catálogo modificado**: Si la mochila no contiene artículos (total de ítems = 0) o todos sus elementos están desmarcados, el progreso calculado DEBE ser estrictamente 0% sin incurrir en división por cero, valores `NaN` ni errores de desbordamiento. Para cualquier combinación con total de ítems > 0, el progreso DEBE ser un número entero acotado exactamente en el intervalo discreto [0, 100].
+- **Cero pérdida ante fallas locales**: Si ocurre un fallo inesperado o corrupción en el almacenamiento local, el sistema DEBE restablecer automáticamente el catálogo predeterminado oficial de INDECI garantizando que la aplicación continúe operativa.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE ofrecer un catálogo interactivo de mochila de emergencia dividido en exactamente 6 categorías principales: Primeros Auxilios, Alimentos No Perecibles, Agua, Herramientas, Abrigo y Documentos.
-- **FR-002**: El sistema DEBE calcular reactivamente el porcentaje general de preparación de la mochila en una escala continua de 0% a 100%, actualizándose inmediatamente tras cualquier cambio en el estado de marcado de un artículo.
+- **FR-002**: El sistema DEBE calcular reactivamente el porcentaje general de preparación de la mochila en una escala continua o entera de 0% a 100%, actualizándose inmediatamente tras cualquier cambio en el estado de marcado de un artículo. Si el total de artículos es 0, el progreso DEBE ser 0% de forma invariable.
 - **FR-003**: El sistema DEBE permitir visualizar el progreso tanto a nivel general (porcentaje global del 0% al 100%) como el desglose de avance de cada una de las 6 categorías.
-- **FR-004**: El sistema DEBE permitir registrar integrantes del hogar con su nombre completo y su rol específico asignado ante una emergencia sísmica.
+- **FR-004**: El sistema DEBE permitir registrar integrantes del hogar con su nombre completo y su rol específico asignado ante una emergencia sísmica, admitiendo un máximo de hasta 20 integrantes por plan familiar.
 - **FR-005**: El sistema DEBE permitir modificar, reasignar roles y eliminar integrantes registrados en el plan familiar.
 - **FR-006**: El sistema DEBE permitir el registro y visualización de dos ubicaciones críticas de encuentro: Punto de Encuentro Interno (dentro de la vivienda o edificio) y Punto de Encuentro Externo (en la comunidad, calle o parque seguro).
-- **FR-007**: El sistema DEBE proveer una sección informativa de acceso rápido con las instrucciones oficiales de uso del servicio 119 (Mensajería de Voz de Emergencia Nacional) y permitir la marcación directa hacia el número 119 utilizando el marcador telefónico nativo del dispositivo.
+- **FR-007**: El sistema DEBE registrar un "Número de Celular Familiar Clave" (9 dígitos numéricos) y proporcionar dos botones de acción rápida compatibles con el protocolo oficial del servicio 119 de mensajería de voz: "Grabar Mensaje 119" (hacia `tel:1191{numero}`) y "Escuchar Mensaje 119" (hacia `tel:1192{numero}`), activando el marcador nativo del dispositivo.
 - **FR-008**: El sistema DEBE operar con una política 100% offline, garantizando que ninguna funcionalidad, pantalla o botón dependa de internet, llamadas a servidores remotos ni inicio de sesión (cero autenticación externa requerida).
 - **FR-009**: El sistema DEBE persistir de forma instantánea y local todos los estados de ítems, datos familiares y puntos de encuentro ante cada evento de modificación del usuario.
 - **FR-010**: El sistema DEBE validar las entradas de texto del usuario, impidiendo registros en blanco o con solo espacios para nombres y roles familiares.
@@ -89,7 +90,7 @@ Como persona en una zona de desastre o sin cobertura de red móvil/Wi-Fi, quiero
 - **ArticuloMochila**: Representa un ítem esencial de la mochila de emergencia. Atributos: identificador único, nombre del artículo, categoría (Primeros Auxilios, Alimentos No Perecibles, Agua, Herramientas, Abrigo, Documentos), estado de completado (marcado/desmarcado), es_predeterminado (booleano).
 - **CategoriaMochila**: Agrupador temático de artículos. Atributos: identificador de categoría, nombre, descripción, lista de artículos asociados, porcentaje de completitud por categoría.
 - **IntegranteFamiliar**: Miembro del hogar participante del plan de emergencia. Atributos: identificador único, nombre, rol asignado ante sismos (ej. responsable de mochila, encargado de evacuar mascotas, operador de corte de suministros, apoyo a adultos mayores/niños), notas adicionales.
-- **PlanFamiliar**: Entidad que agrupa las definiciones de evacuación del hogar. Atributos: punto de encuentro interno (descripción/dirección), punto de encuentro externo (descripción/referencia), fecha de última actualización.
+- **PlanFamiliar**: Entidad que agrupa las definiciones de evacuación del hogar. Atributos: punto de encuentro interno (descripción/dirección), punto de encuentro externo (descripción/referencia), numero_familiar_clave (cadena de 9 dígitos para el protocolo 119), fecha de última actualización.
 - **GuiaEmergencia119**: Información de referencia estática y protocolo de uso del servicio nacional de mensajería de voz post-sismo 119.
 
 ## Success Criteria *(mandatory)*
