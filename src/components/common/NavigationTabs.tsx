@@ -1,7 +1,7 @@
 import React from 'react';
-import { Backpack, Package, Users, Wrench, Waves } from 'lucide-react';
+import { Backpack, Package, Users, Wrench, Waves, Map } from 'lucide-react';
 
-export type TabType = 'mochila' | 'caja' | 'plan' | 'sos' | 'huaicos';
+export type TabType = 'mochila' | 'caja' | 'plan' | 'mapa' | 'sos' | 'huaicos';
 
 interface NavigationTabsProps {
   activeTab: TabType;
@@ -75,6 +75,19 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
               {badgePlan}
             </span>
           )}
+        </button>
+
+        <button
+          onClick={() => onTabChange('mapa')}
+          className={`flex-1 py-3 px-2 sm:px-3 text-center font-semibold text-xs sm:text-sm border-b-2 flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap min-h-[48px] ${
+            activeTab === 'mapa'
+              ? 'border-emerald-600 text-emerald-600'
+              : 'border-transparent text-slate-600 hover:text-slate-900'
+          }`}
+          data-testid="tab-mapa"
+        >
+          <Map className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-emerald-600" />
+          <span>Mapa GPS</span>
         </button>
 
         <button

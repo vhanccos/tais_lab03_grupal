@@ -7,6 +7,7 @@ import { CajaReservaView } from './components/mochila/CajaReservaView';
 import { PlanFamiliarView } from './components/planFamiliar/PlanFamiliarView';
 import { HerramientasEmergencia } from './components/utilities/HerramientasEmergencia';
 import { HuaicosView } from './components/huaicos/HuaicosView';
+import { MapaView } from './components/mapa/MapaView';
 import { useMochila } from './hooks/useMochila';
 import { useCajaReserva } from './hooks/useCajaReserva';
 import { usePlanFamiliar } from './hooks/usePlanFamiliar';
@@ -39,6 +40,8 @@ export function App() {
           <CajaReservaView />
         ) : activeTab === 'plan' ? (
           <PlanFamiliarView />
+        ) : activeTab === 'mapa' ? (
+          <MapaView />
         ) : activeTab === 'sos' ? (
           <HerramientasEmergencia />
         ) : (
