@@ -403,6 +403,8 @@ export const INFORMACION_ALERTAS: Record<NivelAlertaHuaico, AlertaInfo> = {
   }
 };
 
+export const SENAMHI_ALERTAS = INFORMACION_ALERTAS;
+
 /**
  * Cálculo reactivo puro del progreso estacional de preparación ante huaicos.
  * Invariante matemático: Total = 0 ? 0 : round((completados / total) * 100).
