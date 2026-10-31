@@ -1,5 +1,7 @@
-import { AppState } from './stateTypes';
+import { AppState, PuntoEncuentro } from './stateTypes';
 import { DEFAULT_ARTICULOS_INDECI } from '../core/defaultCatalog';
+import { DEFAULT_ARTICULOS_CAJA_RESERVA } from '../core/defaultCajaReserva';
+import { DEFAULT_PUNTOS_ENCUENTRO } from '../core/defaultMeetingPoints';
 
 export const STORAGE_KEY = 'sismolisto_app_state_v1';
 
@@ -10,9 +12,13 @@ export function createDefaultState(): AppState {
     mochila: {
       articulos: JSON.parse(JSON.stringify(DEFAULT_ARTICULOS_INDECI))
     },
+    cajaReserva: {
+      articulos: JSON.parse(JSON.stringify(DEFAULT_ARTICULOS_CAJA_RESERVA))
+    },
     planFamiliar: {
       puntoEncuentroInterno: '',
       puntoEncuentroExterno: '',
+      puntosEncuentro: JSON.parse(JSON.stringify(DEFAULT_PUNTOS_ENCUENTRO)),
       numeroFamiliarClave: '',
       integrantes: [],
       fechaActualizacion: new Date().toISOString()
@@ -42,13 +48,37 @@ export class StorageAdapter implements IStorageAdapter {
         if (raw) {
           const parsed = JSON.parse(raw) as Partial<AppState>;
           if (parsed && parsed.mochila && Array.isArray(parsed.mochila.articulos) && parsed.planFamiliar) {
+            // Migración defensiva hacia Caja de Reserva
+            if (!parsed.cajaReserva || !Array.isArray(parsed.cajaReserva.articulos)) {
+              parsed.cajaReserva = {
+                articulos: JSON.parse(JSON.stringify(DEFAULT_ARTICULOS_CAJA_RESERVA))
+              };
+            }
+
+            // Migración defensiva hacia colección estructurada de Puntos de Encuentro
+            if (!Array.isArray(parsed.planFamiliar.puntosEncuentro)) {
+              const defaultPuntos: PuntoEncuentro[] = JSON.parse(JSON.stringify(DEFAULT_PUNTOS_ENCUENTRO));
+              if (parsed.planFamiliar.puntoEncuentroInterno) {
+                const interno = defaultPuntos.find(p => p.tipo === 'interno');
+                if (interno) interno.descripcion = parsed.planFamiliar.puntoEncuentroInterno;
+              }
+              if (parsed.planFamiliar.puntoEncuentroExterno) {
+                const externo = defaultPuntos.find(p => p.tipo === 'externo');
+                if (externo) externo.descripcion = parsed.planFamiliar.puntoEncuentroExterno;
+              }
+              parsed.planFamiliar.puntosEncuentro = defaultPuntos;
+            }
+
             this.inMemoryFallback = parsed as AppState;
             return parsed as AppState;
           }
+        } else {
+          // localStorage está vacío o fue limpiado
+          this.inMemoryFallback = null;
         }
       }
 
-      if (this.inMemoryFallback) {
+      if (this.inMemoryFallback && this.hasLocalStorageFailed) {
         return this.inMemoryFallback;
       }
 
@@ -57,7 +87,7 @@ export class StorageAdapter implements IStorageAdapter {
       return defaultState;
     } catch (error) {
       console.warn('Error al deserializar almacenamiento local. Aplicando auto-recuperación.', error);
-      const fallback = this.inMemoryFallback || createDefaultState();
+      const fallback = (this.hasLocalStorageFailed && this.inMemoryFallback) || createDefaultState();
       this.inMemoryFallback = fallback;
       return fallback;
     }

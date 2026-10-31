@@ -1,7 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fc from 'fast-check';
 import { StorageAdapter } from '../../src/storage/storageAdapter';
-import { AppState, ArticuloMochila, CategoriaId, IntegranteFamiliar } from '../../src/storage/stateTypes';
+import {
+  AppState,
+  ArticuloMochila,
+  ArticuloCajaReserva,
+  CategoriaId,
+  CategoriaCajaId,
+  IntegranteFamiliar,
+  PuntoEncuentro
+} from '../../src/storage/stateTypes';
 
 const CATEGORIAS_VALIDAS: CategoriaId[] = [
   'primeros_auxilios',
@@ -10,6 +18,13 @@ const CATEGORIAS_VALIDAS: CategoriaId[] = [
   'herramientas',
   'abrigo',
   'documentos'
+];
+
+const CATEGORIAS_CAJA_VALIDAS: CategoriaCajaId[] = [
+  'agua_alimentos',
+  'higiene',
+  'abrigo_refugio',
+  'herramientas_diversos'
 ];
 
 describe('Property-Based Testing: Round-Trip de Persistencia Local', () => {
@@ -34,11 +49,28 @@ describe('Property-Based Testing: Round-Trip de Persistencia Local', () => {
       esPredeterminado: fc.boolean()
     });
 
+    const articuloCajaArbitrary = fc.record<ArticuloCajaReserva>({
+      id: fc.uuid(),
+      nombre: fc.string({ minLength: 1, maxLength: 40 }),
+      categoriaId: fc.constantFrom(...CATEGORIAS_CAJA_VALIDAS),
+      completado: fc.boolean(),
+      cantidadSugerida: fc.string({ maxLength: 20 }),
+      esPredeterminado: fc.boolean()
+    });
+
     const integranteArbitrary = fc.record<IntegranteFamiliar>({
       id: fc.uuid(),
       nombreCompleto: fc.string({ minLength: 1, maxLength: 60 }),
       rolSismo: fc.string({ minLength: 1, maxLength: 80 }),
       notas: fc.option(fc.string({ maxLength: 100 }), { nil: undefined })
+    });
+
+    const puntoArbitrary = fc.record<PuntoEncuentro>({
+      id: fc.uuid(),
+      nombre: fc.string({ minLength: 1, maxLength: 50 }),
+      tipo: fc.constantFrom('interno', 'externo', 'comunitario', 'seguro'),
+      descripcion: fc.string({ minLength: 1, maxLength: 100 }),
+      esPredeterminado: fc.boolean()
     });
 
     const appStateArbitrary = fc.record<AppState>({
@@ -47,9 +79,13 @@ describe('Property-Based Testing: Round-Trip de Persistencia Local', () => {
       mochila: fc.record({
         articulos: fc.array(articuloArbitrary, { minLength: 0, maxLength: 50 })
       }),
+      cajaReserva: fc.record({
+        articulos: fc.array(articuloCajaArbitrary, { minLength: 0, maxLength: 20 })
+      }),
       planFamiliar: fc.record({
         puntoEncuentroInterno: fc.string({ maxLength: 100 }),
         puntoEncuentroExterno: fc.string({ maxLength: 100 }),
+        puntosEncuentro: fc.array(puntoArbitrary, { minLength: 0, maxLength: 10 }),
         numeroFamiliarClave: fc.stringMatching(/^(9\d{8}|)$/),
         integrantes: fc.array(integranteArbitrary, { minLength: 0, maxLength: 20 }),
         fechaActualizacion: fc.constant(new Date().toISOString())
@@ -68,7 +104,9 @@ describe('Property-Based Testing: Round-Trip de Persistencia Local', () => {
         // Comprobación de integridad estructural
         expect(loadedState.version).toBe(originalState.version);
         expect(loadedState.mochila.articulos.length).toBe(originalState.mochila.articulos.length);
+        expect(loadedState.cajaReserva.articulos.length).toBe(originalState.cajaReserva.articulos.length);
         expect(loadedState.planFamiliar.integrantes.length).toBe(originalState.planFamiliar.integrantes.length);
+        expect(loadedState.planFamiliar.puntosEncuentro.length).toBe(originalState.planFamiliar.puntosEncuentro.length);
         expect(loadedState.planFamiliar.puntoEncuentroInterno).toBe(originalState.planFamiliar.puntoEncuentroInterno);
         expect(loadedState.planFamiliar.puntoEncuentroExterno).toBe(originalState.planFamiliar.puntoEncuentroExterno);
         expect(loadedState.planFamiliar.numeroFamiliarClave).toBe(originalState.planFamiliar.numeroFamiliarClave);

@@ -3,15 +3,19 @@ import { Header } from './components/common/Header';
 import { NavigationTabs, TabType } from './components/common/NavigationTabs';
 import { OfflineBadge } from './components/common/OfflineBadge';
 import { ChecklistMochila } from './components/mochila/ChecklistMochila';
+import { CajaReservaView } from './components/mochila/CajaReservaView';
 import { PlanFamiliarView } from './components/planFamiliar/PlanFamiliarView';
+import { HerramientasEmergencia } from './components/utilities/HerramientasEmergencia';
 import { HuaicosView } from './components/huaicos/HuaicosView';
 import { useMochila } from './hooks/useMochila';
+import { useCajaReserva } from './hooks/useCajaReserva';
 import { usePlanFamiliar } from './hooks/usePlanFamiliar';
 import { useHuaicos } from './hooks/useHuaicos';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<TabType>('mochila');
   const { progress } = useMochila();
+  const { progreso: progresoCaja } = useCajaReserva();
   const { plan } = usePlanFamiliar();
   const { metricas: metricasHuaicos } = useHuaicos();
 
@@ -23,6 +27,7 @@ export function App() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         badgeMochila={progress.porcentajeTotal}
+        badgeCaja={progresoCaja.porcentajeTotal}
         badgePlan={plan.integrantes.length}
         badgeHuaicos={metricasHuaicos.porcentajeTotal}
       />
@@ -30,8 +35,12 @@ export function App() {
       <main className="flex-1 pb-16">
         {activeTab === 'mochila' ? (
           <ChecklistMochila />
+        ) : activeTab === 'caja' ? (
+          <CajaReservaView />
         ) : activeTab === 'plan' ? (
           <PlanFamiliarView />
+        ) : activeTab === 'sos' ? (
+          <HerramientasEmergencia />
         ) : (
           <HuaicosView />
         )}

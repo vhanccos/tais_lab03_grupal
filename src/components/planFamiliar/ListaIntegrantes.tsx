@@ -1,13 +1,18 @@
 import React from 'react';
-import { Trash2, User, ShieldCheck } from 'lucide-react';
+import { Trash2, User, ShieldCheck, Pencil } from 'lucide-react';
 import { IntegranteFamiliar } from '../../storage/stateTypes';
 
 interface ListaIntegrantesProps {
   integrantes: IntegranteFamiliar[];
   onRemove: (id: string) => void;
+  onEdit?: (member: IntegranteFamiliar) => void;
 }
 
-export const ListaIntegrantes: React.FC<ListaIntegrantesProps> = ({ integrantes, onRemove }) => {
+export const ListaIntegrantes: React.FC<ListaIntegrantesProps> = ({
+  integrantes,
+  onRemove,
+  onEdit
+}) => {
   if (integrantes.length === 0) {
     return (
       <div className="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-8 text-center text-slate-500 mb-6">
@@ -44,21 +49,41 @@ export const ListaIntegrantes: React.FC<ListaIntegrantesProps> = ({ integrantes,
                   {member.nombreCompleto}
                 </h4>
                 <div className="flex items-center gap-1.5 text-xs text-slate-600 mt-0.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span className="break-words font-medium">{member.rolSismo}</span>
                 </div>
               </div>
             </div>
 
-            <button
-              onClick={() => onRemove(member.id)}
-              className="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
-              title="Eliminar integrante"
-              aria-label={`Eliminar ${member.nombreCompleto}`}
-              data-testid={`btn-eliminar-familiar-${member.id}`}
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              {onEdit && (
+                <button
+                  type="button"
+                  onClick={() => onEdit(member)}
+                  className="text-slate-400 hover:text-blue-600 p-2 rounded-lg hover:bg-blue-50 transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center"
+                  title="Editar integrante"
+                  aria-label={`Editar ${member.nombreCompleto}`}
+                  data-testid={`btn-editar-familiar-${member.id}`}
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm(`¿Deseas eliminar a ${member.nombreCompleto}?`)) {
+                    onRemove(member.id);
+                  }
+                }}
+                className="text-slate-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center"
+                title="Eliminar integrante"
+                aria-label={`Eliminar ${member.nombreCompleto}`}
+                data-testid={`btn-eliminar-familiar-${member.id}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         ))}
       </div>

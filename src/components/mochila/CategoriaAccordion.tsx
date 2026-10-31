@@ -7,6 +7,8 @@ interface CategoriaAccordionProps {
   detalle: DetalleCategoria;
   articulos: ArticuloMochila[];
   onToggleItem: (id: string) => void;
+  onEditItem?: (articulo: ArticuloMochila) => void;
+  onDeleteItem?: (id: string) => void;
   defaultOpen?: boolean;
 }
 
@@ -14,6 +16,8 @@ export const CategoriaAccordion: React.FC<CategoriaAccordionProps> = ({
   detalle,
   articulos,
   onToggleItem,
+  onEditItem,
+  onDeleteItem,
   defaultOpen = false
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -57,9 +61,21 @@ export const CategoriaAccordion: React.FC<CategoriaAccordionProps> = ({
 
       {isOpen && (
         <div className="px-5 pb-5 pt-1 border-t border-slate-100 space-y-2.5">
-          {articulos.map((art) => (
-            <ChecklistItem key={art.id} articulo={art} onToggle={onToggleItem} />
-          ))}
+          {articulos.length === 0 ? (
+            <p className="text-xs text-slate-400 py-3 text-center italic">
+              No hay artículos en esta categoría.
+            </p>
+          ) : (
+            articulos.map((art) => (
+              <ChecklistItem
+                key={art.id}
+                articulo={art}
+                onToggle={onToggleItem}
+                onEdit={onEditItem}
+                onDelete={onDeleteItem}
+              />
+            ))
+          )}
         </div>
       )}
     </div>
