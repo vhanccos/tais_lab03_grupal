@@ -32,6 +32,19 @@ function loadHuaicosFromStorage(): HuaicosState {
           parsed.planEvacuacion &&
           parsed.nivelAlertaActual
         ) {
+          const defaultPlan = createDefaultHuaicosState().planEvacuacion;
+          parsed.planEvacuacion = {
+            ...defaultPlan,
+            ...parsed.planEvacuacion,
+            puntoEncuentroCotaAlta: parsed.planEvacuacion.puntoEncuentroCotaAlta ?? '',
+            descripcionRutaPerpendicular: parsed.planEvacuacion.descripcionRutaPerpendicular ?? '',
+            contactoReferenciaNombre: parsed.planEvacuacion.contactoReferenciaNombre ?? '',
+            contactoReferenciaTelefono: parsed.planEvacuacion.contactoReferenciaTelefono ?? '',
+            viviendaEnRiesgoAbanico: Boolean(parsed.planEvacuacion.viviendaEnRiesgoAbanico)
+          };
+          if (!parsed.version || typeof parsed.version !== 'number') {
+            parsed.version = 1;
+          }
           inMemoryFallback = parsed as HuaicosState;
           return parsed as HuaicosState;
         }
@@ -96,6 +109,16 @@ export function useHuaicos(): UseHuaicosReturn {
         try {
           const fresh = JSON.parse(e.newValue) as HuaicosState;
           if (fresh && Array.isArray(fresh.articulos)) {
+            const defaultPlan = createDefaultHuaicosState().planEvacuacion;
+            fresh.planEvacuacion = {
+              ...defaultPlan,
+              ...(fresh.planEvacuacion || {}),
+              puntoEncuentroCotaAlta: fresh.planEvacuacion?.puntoEncuentroCotaAlta ?? '',
+              descripcionRutaPerpendicular: fresh.planEvacuacion?.descripcionRutaPerpendicular ?? '',
+              contactoReferenciaNombre: fresh.planEvacuacion?.contactoReferenciaNombre ?? '',
+              contactoReferenciaTelefono: fresh.planEvacuacion?.contactoReferenciaTelefono ?? '',
+              viviendaEnRiesgoAbanico: Boolean(fresh.planEvacuacion?.viviendaEnRiesgoAbanico)
+            };
             setState(fresh);
             inMemoryFallback = fresh;
           }

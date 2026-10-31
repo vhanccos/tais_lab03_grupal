@@ -25,11 +25,11 @@ export const GuiaEvacuacionPerpendicular: React.FC<GuiaEvacuacionPerpendicularPr
   plan,
   onGuardarPlan
 }) => {
-  const [puntoEncuentro, setPuntoEncuentro] = useState(plan.puntoEncuentroCotaAlta);
-  const [ruta, setRuta] = useState(plan.descripcionRutaPerpendicular);
-  const [contactoNombre, setContactoNombre] = useState(plan.contactoReferenciaNombre);
-  const [contactoTelefono, setContactoTelefono] = useState(plan.contactoReferenciaTelefono);
-  const [enAbanico, setEnAbanico] = useState(plan.viviendaEnRiesgoAbanico);
+  const [puntoEncuentro, setPuntoEncuentro] = useState(plan?.puntoEncuentroCotaAlta ?? '');
+  const [ruta, setRuta] = useState(plan?.descripcionRutaPerpendicular ?? '');
+  const [contactoNombre, setContactoNombre] = useState(plan?.contactoReferenciaNombre ?? '');
+  const [contactoTelefono, setContactoTelefono] = useState(plan?.contactoReferenciaTelefono ?? '');
+  const [enAbanico, setEnAbanico] = useState(Boolean(plan?.viviendaEnRiesgoAbanico));
 
   const [guardadoExitoso, setGuardadoExitoso] = useState(false);
   const [errorValidacion, setErrorValidacion] = useState<string | null>(null);
@@ -38,30 +38,31 @@ export const GuiaEvacuacionPerpendicular: React.FC<GuiaEvacuacionPerpendicularPr
     e.preventDefault();
     setErrorValidacion(null);
 
-    const puntoTrim = puntoEncuentro.trim();
+    const puntoTrim = (puntoEncuentro || '').trim();
     if (!puntoTrim) {
       setErrorValidacion('Debe ingresar el nombre o ubicación de la zona segura en cota alta.');
       return;
     }
 
-    if (contactoTelefono.trim() && !validarTelefonoPeru(contactoTelefono)) {
+    const telefonoTrim = (contactoTelefono || '').trim();
+    if (telefonoTrim && !validarTelefonoPeru(telefonoTrim)) {
       setErrorValidacion('El teléfono de contacto debe tener 9 dígitos y comenzar con 9 (ej. 987654321).');
       return;
     }
 
     onGuardarPlan({
       puntoEncuentroCotaAlta: puntoTrim,
-      descripcionRutaPerpendicular: ruta.trim(),
-      contactoReferenciaNombre: contactoNombre.trim(),
-      contactoReferenciaTelefono: contactoTelefono.trim(),
-      viviendaEnRiesgoAbanico: enAbanico
+      descripcionRutaPerpendicular: (ruta || '').trim(),
+      contactoReferenciaNombre: (contactoNombre || '').trim(),
+      contactoReferenciaTelefono: telefonoTrim,
+      viviendaEnRiesgoAbanico: Boolean(enAbanico)
     });
 
     setGuardadoExitoso(true);
     setTimeout(() => setGuardadoExitoso(false), 3000);
   };
 
-  const telefonoValido = validarTelefonoPeru(contactoTelefono);
+  const telefonoValido = validarTelefonoPeru(contactoTelefono || '');
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" data-testid="guia-evacuacion">

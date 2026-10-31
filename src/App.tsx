@@ -29,7 +29,7 @@ export function App() {
         onTabChange={setActiveTab}
         badgeMochila={progress.porcentajeTotal}
         badgeCaja={progresoCaja.porcentajeTotal}
-        badgePlan={plan.integrantes.length}
+        badgePlan={plan?.integrantes?.length ?? 0}
         badgeHuaicos={metricasHuaicos.porcentajeTotal}
       />
 

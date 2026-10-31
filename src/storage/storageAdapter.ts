@@ -47,26 +47,65 @@ export class StorageAdapter implements IStorageAdapter {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw) as Partial<AppState>;
-          if (parsed && parsed.mochila && Array.isArray(parsed.mochila.articulos) && parsed.planFamiliar) {
-            // Migración defensiva hacia Caja de Reserva
-            if (!parsed.cajaReserva || !Array.isArray(parsed.cajaReserva.articulos)) {
+          if (parsed && typeof parsed === 'object') {
+            const isCorruptOrMissingVersion = !parsed.version || typeof parsed.version !== 'number';
+            if (isCorruptOrMissingVersion) {
+              parsed.version = 1;
+            }
+
+            // Normalización defensiva de mochila y articulos
+            if (!parsed.mochila || typeof parsed.mochila !== 'object' || !Array.isArray(parsed.mochila.articulos)) {
+              parsed.mochila = {
+                articulos: JSON.parse(JSON.stringify(DEFAULT_ARTICULOS_INDECI))
+              };
+            } else if (isCorruptOrMissingVersion && parsed.mochila.articulos.length === 0) {
+              parsed.mochila.articulos = JSON.parse(JSON.stringify(DEFAULT_ARTICULOS_INDECI));
+            }
+
+            // Normalización defensiva de cajaReserva y articulos
+            if (!parsed.cajaReserva || typeof parsed.cajaReserva !== 'object' || !Array.isArray(parsed.cajaReserva.articulos)) {
               parsed.cajaReserva = {
                 articulos: JSON.parse(JSON.stringify(DEFAULT_ARTICULOS_CAJA_RESERVA))
               };
             }
 
-            // Migración defensiva hacia colección estructurada de Puntos de Encuentro
-            if (!Array.isArray(parsed.planFamiliar.puntosEncuentro)) {
-              const defaultPuntos: PuntoEncuentro[] = JSON.parse(JSON.stringify(DEFAULT_PUNTOS_ENCUENTRO));
-              if (parsed.planFamiliar.puntoEncuentroInterno) {
-                const interno = defaultPuntos.find(p => p.tipo === 'interno');
-                if (interno) interno.descripcion = parsed.planFamiliar.puntoEncuentroInterno;
+            // Normalización defensiva de planFamiliar
+            if (!parsed.planFamiliar || typeof parsed.planFamiliar !== 'object') {
+              parsed.planFamiliar = createDefaultState().planFamiliar;
+            } else {
+              if (!Array.isArray(parsed.planFamiliar.integrantes)) {
+                parsed.planFamiliar.integrantes = [];
               }
-              if (parsed.planFamiliar.puntoEncuentroExterno) {
-                const externo = defaultPuntos.find(p => p.tipo === 'externo');
-                if (externo) externo.descripcion = parsed.planFamiliar.puntoEncuentroExterno;
+              if (typeof parsed.planFamiliar.numeroFamiliarClave !== 'string') {
+                parsed.planFamiliar.numeroFamiliarClave = '';
               }
-              parsed.planFamiliar.puntosEncuentro = defaultPuntos;
+              if (typeof parsed.planFamiliar.puntoEncuentroInterno !== 'string') {
+                parsed.planFamiliar.puntoEncuentroInterno = '';
+              }
+              if (typeof parsed.planFamiliar.puntoEncuentroExterno !== 'string') {
+                parsed.planFamiliar.puntoEncuentroExterno = '';
+              }
+              if (typeof parsed.planFamiliar.fechaActualizacion !== 'string') {
+                parsed.planFamiliar.fechaActualizacion = new Date().toISOString();
+              }
+
+              // Normalización defensiva hacia colección estructurada de Puntos de Encuentro
+              if (!Array.isArray(parsed.planFamiliar.puntosEncuentro)) {
+                const defaultPuntos: PuntoEncuentro[] = JSON.parse(JSON.stringify(DEFAULT_PUNTOS_ENCUENTRO));
+                if (parsed.planFamiliar.puntoEncuentroInterno) {
+                  const interno = defaultPuntos.find(p => p.tipo === 'interno');
+                  if (interno) interno.descripcion = parsed.planFamiliar.puntoEncuentroInterno;
+                }
+                if (parsed.planFamiliar.puntoEncuentroExterno) {
+                  const externo = defaultPuntos.find(p => p.tipo === 'externo');
+                  if (externo) externo.descripcion = parsed.planFamiliar.puntoEncuentroExterno;
+                }
+                parsed.planFamiliar.puntosEncuentro = defaultPuntos;
+              }
+            }
+
+            if (!parsed.ultimaModificacion || typeof parsed.ultimaModificacion !== 'string') {
+              parsed.ultimaModificacion = new Date().toISOString();
             }
 
             this.inMemoryFallback = parsed as AppState;
