@@ -19,15 +19,15 @@ export interface NearestPointResult {
   rumboGrados: number;
 }
 
-// Bounding box default for Arequipa Cercado / UNSA & surrounding disaster-resilience safe zones
+// Bounding box default for Arequipa Cercado / UNSA Campus Ingenierías & surrounding disaster-resilience safe zones
 export const DEFAULT_AREQUIPA_BOUNDS: BoundsGeo = {
-  minLat: -16.420000,
-  maxLat: -16.395000,
-  minLng: -71.540000,
-  maxLng: -71.510000
+  minLat: -16.4085,
+  maxLat: -16.4015,
+  minLng: -71.5295,
+  maxLng: -71.5205
 };
 
-// Default reference coordinates (UNSA / Cercado de Arequipa: -16.4064328, -71.5253347)
+// Default reference coordinates (UNSA Campus Ingenierías / Sistemas: -16.4064328, -71.5253347)
 export const DEFAULT_AREQUIPA_CENTER: CoordenadaGeo = {
   lat: -16.4064328,
   lng: -71.5253347

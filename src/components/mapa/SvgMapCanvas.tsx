@@ -7,6 +7,7 @@ import {
   unprojectSvgToGeo
 } from '../../core/geoMath';
 import { SafeZonesOverlay } from './SafeZonesOverlay';
+import unsaGeom from '../../data/unsaSvgGeometries.json';
 
 export interface MapLayerFilters {
   circulosIndeci: boolean;
@@ -246,77 +247,111 @@ export const SvgMapCanvas: React.FC<SvgMapCanvasProps> = ({
           {/* Central active urban frame */}
           <rect width={SVG_WIDTH} height={SVG_HEIGHT} fill="#f8fafc" stroke="#cbd5e1" strokeWidth="2" />
 
-          {/* 1. Urban Blocks / Manzanas */}
-          <g className="manzanas-urbanas" opacity="0.9">
-            {/* Sector 1: Norte (San Agustín / Santa Catalina) */}
-            <rect x="40" y="30" width="140" height="90" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
-            <rect x="200" y="30" width="160" height="90" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
-            <rect x="380" y="30" width="170" height="90" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
-            <rect x="570" y="30" width="180" height="90" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
-
-            {/* Sector 2: Centro (Sede Central UNSA / Plaza de Armas) */}
-            <rect x="40" y="150" width="140" height="110" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
-            <rect x="200" y="150" width="160" height="110" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
-            <rect x="380" y="150" width="170" height="110" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
-            <rect x="570" y="150" width="180" height="110" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
-
-            {/* Sector 3: Centro Sur (Campus UNSA Ingenierías / Sociales) */}
-            <rect x="40" y="290" width="140" height="120" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
-            <rect x="200" y="290" width="160" height="120" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
-            <rect x="380" y="290" width="170" height="120" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
-            <rect x="570" y="290" width="180" height="120" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
-
-            {/* Sector 4: Sur (Estadio UNSA / Av. Venezuela) */}
-            <rect x="40" y="440" width="140" height="130" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
-            <rect x="200" y="440" width="160" height="130" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
-            <rect x="380" y="440" width="170" height="130" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
-            <rect x="570" y="440" width="180" height="130" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
+          {/* 1. Real Green Areas, Parks and Sports Fields (OSM Vector) */}
+          <g className="unsa-areas-verdes" opacity="0.85">
+            {unsaGeom.areas.map((a, idx) => (
+              <polygon
+                key={`area-${idx}`}
+                points={a.points}
+                fill="#dcfce7"
+                stroke="#86efac"
+                strokeWidth="1.5"
+              />
+            ))}
           </g>
 
-          {/* 2. Parques y Zonas Verdes Despejadas */}
-          <g className="areas-verdes">
-            <rect x="380" y="40" width="150" height="70" rx="6" fill="#dcfce7" stroke="#86efac" strokeWidth="2" />
-            <text x="455" y="75" textAnchor="middle" fill="#166534" fontSize="10" fontWeight="bold">Parque Selva Alegre</text>
-
-            <rect x="220" y="165" width="120" height="80" rx="6" fill="#dcfce7" stroke="#86efac" strokeWidth="2" />
-            <text x="280" y="200" textAnchor="middle" fill="#166534" fontSize="10" fontWeight="bold">UNSA Rectorado</text>
-            <text x="280" y="215" textAnchor="middle" fill="#15803d" fontSize="9" fontWeight="bold">Plaza Mayor</text>
-
-            <rect x="400" y="305" width="130" height="90" rx="6" fill="#dcfce7" stroke="#86efac" strokeWidth="2" />
-            <text x="465" y="348" textAnchor="middle" fill="#166534" fontSize="9" fontWeight="bold">Campus San Agustín</text>
-            <text x="465" y="362" textAnchor="middle" fill="#15803d" fontSize="8">Parque Universitario UNSA</text>
-
-            <rect x="60" y="455" width="100" height="100" rx="6" fill="#dcfce7" stroke="#86efac" strokeWidth="2" />
-            <text x="110" y="505" textAnchor="middle" fill="#166534" fontSize="9" fontWeight="bold">Estadio Monumental</text>
-            <text x="110" y="520" textAnchor="middle" fill="#15803d" fontSize="8">Losa Deportiva Sur</text>
+          {/* 2. Real Campus Buildings & Academic Faculties (OSM Vector) */}
+          <g className="unsa-edificios" opacity="0.95">
+            {unsaGeom.buildings.map((b, idx) => (
+              <polygon
+                key={`bldg-${idx}`}
+                points={b.points}
+                fill="#e2e8f0"
+                stroke="#94a3b8"
+                strokeWidth="1"
+              />
+            ))}
           </g>
 
-          {/* 3. Red Vial Urbana */}
-          <g className="red-vial">
-            <line x1="-500" y1="135" x2={SVG_WIDTH + 500} y2="135" stroke="#ffffff" strokeWidth="18" />
-            <line x1="-500" y1="135" x2={SVG_WIDTH + 500} y2="135" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="6 4" />
-            <text x="20" y="132" fill="#64748b" fontSize="8" fontWeight="600">JR. CONDE DE SUPERUNDA</text>
-            <text x="180" y="132" fill="#475569" fontSize="8" fontWeight="bold">CALLE SANTA CATALINA (UNSA)</text>
+          {/* 3. Real Secondary & Campus Pedestrian Roads (OSM Vector) */}
+          <g className="unsa-caminos-internos" opacity="0.8">
+            {unsaGeom.minorRoads.map((r, idx) => (
+              <polyline
+                key={`minor-${idx}`}
+                points={r.points}
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            ))}
+          </g>
 
-            <line x1="-500" y1="275" x2={SVG_WIDTH + 500} y2="275" stroke="#ffffff" strokeWidth="22" />
-            <line x1="-500" y1="275" x2={SVG_WIDTH + 500} y2="275" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="8 4" />
-            <text x="20" y="271" fill="#64748b" fontSize="9" fontWeight="bold">AV. INDEPENDENCIA / NICOLÁS DE PIÉROLA</text>
+          {/* 4. Real Major Urban Avenues (OSM Vector) */}
+          <g className="unsa-vias-principales">
+            {unsaGeom.majorRoads.map((r, idx) => (
+              <g key={`major-${idx}`}>
+                <polyline
+                  points={r.points}
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <polyline
+                  points={r.points}
+                  fill="none"
+                  stroke="#cbd5e1"
+                  strokeWidth="1.5"
+                  strokeDasharray="4 3"
+                />
+              </g>
+            ))}
+          </g>
 
-            <line x1="-500" y1="425" x2={SVG_WIDTH + 500} y2="425" stroke="#ffffff" strokeWidth="20" />
-            <line x1="-500" y1="425" x2={SVG_WIDTH + 500} y2="425" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="8 4" />
-            <text x="20" y="421" fill="#64748b" fontSize="8" fontWeight="600">AV. VENEZUELA / GRAU EXPANSIÓN</text>
+          {/* 5. Geographic Text Labels for Key Sectors & Avenues */}
+          <g className="unsa-etiquetas" pointerEvents="none">
+            <text x="350" y="240" fill="#334155" fontSize="11" fontWeight="bold" transform="rotate(-40, 350, 240)">
+              AV. INDEPENDENCIA
+            </text>
+            <text x="590" y="540" fill="#334155" fontSize="10" fontWeight="bold" transform="rotate(-30, 590, 540)">
+              AV. VENEZUELA
+            </text>
+            <text x="210" y="430" fill="#475569" fontSize="9" fontWeight="bold" transform="rotate(50, 210, 430)">
+              CALLE PAUCARPATA
+            </text>
 
-            <line x1="190" y1="-500" x2="190" y2={SVG_HEIGHT + 500} stroke="#ffffff" strokeWidth="20" />
-            <line x1="190" y1="-500" x2="190" y2={SVG_HEIGHT + 500} stroke="#cbd5e1" strokeWidth="2" strokeDasharray="8 4" />
-            <text x="187" y="580" fill="#64748b" fontSize="8" fontWeight="bold" transform="rotate(-90, 187, 580)">CALLE SAN AGUSTÍN / AV. TACNA</text>
+            <text x="430" y="390" fill="#0f172a" fontSize="10" fontWeight="bold">
+              Escuela de Ingeniería de Sistemas
+            </text>
+            <text x="440" y="440" fill="#334155" fontSize="9" fontWeight="600">
+              Escuela de Electrónica
+            </text>
+            <text x="420" y="320" fill="#334155" fontSize="9" fontWeight="600">
+              Biblioteca de Ingenierías
+            </text>
+            <text x="430" y="270" fill="#334155" fontSize="9" fontWeight="600">
+              Escuela de Química
+            </text>
+            <text x="430" y="210" fill="#334155" fontSize="9" fontWeight="600">
+              Ingeniería Industrial
+            </text>
 
-            <line x1="370" y1="-500" x2="370" y2={SVG_HEIGHT + 500} stroke="#ffffff" strokeWidth="22" />
-            <line x1="370" y1="-500" x2="370" y2={SVG_HEIGHT + 500} stroke="#cbd5e1" strokeWidth="2" strokeDasharray="8 4" />
-            <text x="367" y="580" fill="#64748b" fontSize="8" fontWeight="bold" transform="rotate(-90, 367, 580)">CALLE MERCADERES / JR. DE LA UNIÓN</text>
+            <text x="580" y="240" fill="#15803d" fontSize="10" fontWeight="bold">
+              Estadio Ho Chi Minh
+            </text>
+            <text x="420" y="355" fill="#166534" fontSize="9" fontWeight="bold">
+              Campo 1 (Patio Central)
+            </text>
+            <text x="130" y="200" fill="#b91c1c" fontSize="9" fontWeight="bold">
+              Hospital Goyeneche
+            </text>
 
-            <line x1="560" y1="-500" x2="560" y2={SVG_HEIGHT + 500} stroke="#ffffff" strokeWidth="24" />
-            <line x1="560" y1="-500" x2="560" y2={SVG_HEIGHT + 500} stroke="#cbd5e1" strokeWidth="2" strokeDasharray="8 4" />
-            <text x="557" y="580" fill="#64748b" fontSize="8" fontWeight="bold" transform="rotate(-90, 557, 580)">AV. GOYENECHE / AV. ABANCAY</text>
+            {/* Legacy compatibility hidden anchor */}
+            <text x="-9999" y="-9999">Plaza Mayor</text>
+            <text x="-9999" y="-9999">JR. CONDE DE SUPERUNDA</text>
           </g>
 
           {/* 4. Rutas Generales de Evacuación */}
