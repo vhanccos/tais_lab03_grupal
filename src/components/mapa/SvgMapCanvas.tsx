@@ -323,19 +323,19 @@ export const SvgMapCanvas: React.FC<SvgMapCanvasProps> = ({
               CALLE PAUCARPATA
             </text>
 
-            <text x="430" y="390" fill="#0f172a" fontSize="10" fontWeight="bold">
-              Escuela de Ingeniería de Sistemas
+            <text x="350" y="445" fill="#1e3a8a" fontSize="10" fontWeight="bold">
+              📍 Escuela de Ing. de Sistemas
             </text>
-            <text x="440" y="440" fill="#334155" fontSize="9" fontWeight="600">
+            <text x="440" y="470" fill="#334155" fontSize="9" fontWeight="600">
               Escuela de Electrónica
             </text>
-            <text x="420" y="320" fill="#334155" fontSize="9" fontWeight="600">
+            <text x="390" y="340" fill="#334155" fontSize="9" fontWeight="600">
               Biblioteca de Ingenierías
             </text>
-            <text x="430" y="270" fill="#334155" fontSize="9" fontWeight="600">
+            <text x="420" y="270" fill="#334155" fontSize="9" fontWeight="600">
               Escuela de Química
             </text>
-            <text x="430" y="210" fill="#334155" fontSize="9" fontWeight="600">
+            <text x="420" y="210" fill="#334155" fontSize="9" fontWeight="600">
               Ingeniería Industrial
             </text>
 
