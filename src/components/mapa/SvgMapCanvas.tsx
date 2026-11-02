@@ -240,31 +240,33 @@ export const SvgMapCanvas: React.FC<SvgMapCanvasProps> = ({
 
         {/* Dynamic Zoom & Pan Container */}
         <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
-          {/* Ground surface */}
-          <rect width={SVG_WIDTH} height={SVG_HEIGHT} fill="#f8fafc" />
-          <rect width={SVG_WIDTH} height={SVG_HEIGHT} fill="url(#urban-grid)" />
+          {/* Ground surface extending well beyond bounds to prevent white clipping on zoom out/pan */}
+          <rect x="-1000" y="-1000" width={SVG_WIDTH + 2000} height={SVG_HEIGHT + 2000} fill="#f1f5f9" />
+          <rect x="-1000" y="-1000" width={SVG_WIDTH + 2000} height={SVG_HEIGHT + 2000} fill="url(#urban-grid)" />
+          {/* Central active urban frame */}
+          <rect width={SVG_WIDTH} height={SVG_HEIGHT} fill="#f8fafc" stroke="#cbd5e1" strokeWidth="2" />
 
           {/* 1. Urban Blocks / Manzanas */}
           <g className="manzanas-urbanas" opacity="0.9">
-            {/* Sector 1: Norte */}
+            {/* Sector 1: Norte (San Agustín / Santa Catalina) */}
             <rect x="40" y="30" width="140" height="90" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
             <rect x="200" y="30" width="160" height="90" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
             <rect x="380" y="30" width="170" height="90" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
             <rect x="570" y="30" width="180" height="90" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
 
-            {/* Sector 2: Centro */}
+            {/* Sector 2: Centro (Sede Central UNSA / Plaza de Armas) */}
             <rect x="40" y="150" width="140" height="110" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
             <rect x="200" y="150" width="160" height="110" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
             <rect x="380" y="150" width="170" height="110" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
             <rect x="570" y="150" width="180" height="110" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
 
-            {/* Sector 3: Centro Sur */}
+            {/* Sector 3: Centro Sur (Campus UNSA Ingenierías / Sociales) */}
             <rect x="40" y="290" width="140" height="120" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
             <rect x="200" y="290" width="160" height="120" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
             <rect x="380" y="290" width="170" height="120" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
             <rect x="570" y="290" width="180" height="120" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
 
-            {/* Sector 4: Sur */}
+            {/* Sector 4: Sur (Estadio UNSA / Av. Venezuela) */}
             <rect x="40" y="440" width="140" height="130" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
             <rect x="200" y="440" width="160" height="130" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
             <rect x="380" y="440" width="170" height="130" rx="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
@@ -274,43 +276,47 @@ export const SvgMapCanvas: React.FC<SvgMapCanvasProps> = ({
           {/* 2. Parques y Zonas Verdes Despejadas */}
           <g className="areas-verdes">
             <rect x="380" y="40" width="150" height="70" rx="6" fill="#dcfce7" stroke="#86efac" strokeWidth="2" />
-            <text x="455" y="75" textAnchor="middle" fill="#166534" fontSize="10" fontWeight="bold">Parque de la Muralla</text>
+            <text x="455" y="75" textAnchor="middle" fill="#166534" fontSize="10" fontWeight="bold">Parque Selva Alegre</text>
 
             <rect x="220" y="165" width="120" height="80" rx="6" fill="#dcfce7" stroke="#86efac" strokeWidth="2" />
-            <text x="280" y="210" textAnchor="middle" fill="#166534" fontSize="11" fontWeight="bold">Plaza Mayor</text>
+            <text x="280" y="200" textAnchor="middle" fill="#166534" fontSize="10" fontWeight="bold">UNSA Rectorado</text>
+            <text x="280" y="215" textAnchor="middle" fill="#15803d" fontSize="9" fontWeight="bold">Plaza Mayor</text>
 
             <rect x="400" y="305" width="130" height="90" rx="6" fill="#dcfce7" stroke="#86efac" strokeWidth="2" />
-            <text x="465" y="355" textAnchor="middle" fill="#166534" fontSize="10" fontWeight="bold">Parque Universitario</text>
+            <text x="465" y="348" textAnchor="middle" fill="#166534" fontSize="9" fontWeight="bold">Campus San Agustín</text>
+            <text x="465" y="362" textAnchor="middle" fill="#15803d" fontSize="8">Parque Universitario UNSA</text>
 
             <rect x="60" y="455" width="100" height="100" rx="6" fill="#dcfce7" stroke="#86efac" strokeWidth="2" />
-            <text x="110" y="510" textAnchor="middle" fill="#166534" fontSize="9" fontWeight="bold">Losa Deportiva Sur</text>
+            <text x="110" y="505" textAnchor="middle" fill="#166534" fontSize="9" fontWeight="bold">Estadio Monumental</text>
+            <text x="110" y="520" textAnchor="middle" fill="#15803d" fontSize="8">Losa Deportiva Sur</text>
           </g>
 
           {/* 3. Red Vial Urbana */}
           <g className="red-vial">
-            <line x1="0" y1="135" x2={SVG_WIDTH} y2="135" stroke="#ffffff" strokeWidth="18" />
-            <line x1="0" y1="135" x2={SVG_WIDTH} y2="135" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="6 4" />
+            <line x1="-500" y1="135" x2={SVG_WIDTH + 500} y2="135" stroke="#ffffff" strokeWidth="18" />
+            <line x1="-500" y1="135" x2={SVG_WIDTH + 500} y2="135" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="6 4" />
             <text x="20" y="132" fill="#64748b" fontSize="8" fontWeight="600">JR. CONDE DE SUPERUNDA</text>
+            <text x="180" y="132" fill="#475569" fontSize="8" fontWeight="bold">CALLE SANTA CATALINA (UNSA)</text>
 
-            <line x1="0" y1="275" x2={SVG_WIDTH} y2="275" stroke="#ffffff" strokeWidth="22" />
-            <line x1="0" y1="275" x2={SVG_WIDTH} y2="275" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="8 4" />
-            <text x="20" y="271" fill="#64748b" fontSize="9" fontWeight="bold">AV. NICOLÁS DE PIÉROLA (COLMENA)</text>
+            <line x1="-500" y1="275" x2={SVG_WIDTH + 500} y2="275" stroke="#ffffff" strokeWidth="22" />
+            <line x1="-500" y1="275" x2={SVG_WIDTH + 500} y2="275" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="8 4" />
+            <text x="20" y="271" fill="#64748b" fontSize="9" fontWeight="bold">AV. INDEPENDENCIA / NICOLÁS DE PIÉROLA</text>
 
-            <line x1="0" y1="425" x2={SVG_WIDTH} y2="425" stroke="#ffffff" strokeWidth="20" />
-            <line x1="0" y1="425" x2={SVG_WIDTH} y2="425" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="8 4" />
-            <text x="20" y="421" fill="#64748b" fontSize="8" fontWeight="600">AV. GRAU / EXPANSIÓN</text>
+            <line x1="-500" y1="425" x2={SVG_WIDTH + 500} y2="425" stroke="#ffffff" strokeWidth="20" />
+            <line x1="-500" y1="425" x2={SVG_WIDTH + 500} y2="425" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="8 4" />
+            <text x="20" y="421" fill="#64748b" fontSize="8" fontWeight="600">AV. VENEZUELA / GRAU EXPANSIÓN</text>
 
-            <line x1="190" y1="0" x2="190" y2={SVG_HEIGHT} stroke="#ffffff" strokeWidth="20" />
-            <line x1="190" y1="0" x2="190" y2={SVG_HEIGHT} stroke="#cbd5e1" strokeWidth="2" strokeDasharray="8 4" />
-            <text x="187" y="580" fill="#64748b" fontSize="9" fontWeight="bold" transform="rotate(-90, 187, 580)">AV. TACNA</text>
+            <line x1="190" y1="-500" x2="190" y2={SVG_HEIGHT + 500} stroke="#ffffff" strokeWidth="20" />
+            <line x1="190" y1="-500" x2="190" y2={SVG_HEIGHT + 500} stroke="#cbd5e1" strokeWidth="2" strokeDasharray="8 4" />
+            <text x="187" y="580" fill="#64748b" fontSize="8" fontWeight="bold" transform="rotate(-90, 187, 580)">CALLE SAN AGUSTÍN / AV. TACNA</text>
 
-            <line x1="370" y1="0" x2="370" y2={SVG_HEIGHT} stroke="#ffffff" strokeWidth="22" />
-            <line x1="370" y1="0" x2="370" y2={SVG_HEIGHT} stroke="#cbd5e1" strokeWidth="2" strokeDasharray="8 4" />
-            <text x="367" y="580" fill="#64748b" fontSize="9" fontWeight="bold" transform="rotate(-90, 367, 580)">JR. DE LA UNIÓN</text>
+            <line x1="370" y1="-500" x2="370" y2={SVG_HEIGHT + 500} stroke="#ffffff" strokeWidth="22" />
+            <line x1="370" y1="-500" x2="370" y2={SVG_HEIGHT + 500} stroke="#cbd5e1" strokeWidth="2" strokeDasharray="8 4" />
+            <text x="367" y="580" fill="#64748b" fontSize="8" fontWeight="bold" transform="rotate(-90, 367, 580)">CALLE MERCADERES / JR. DE LA UNIÓN</text>
 
-            <line x1="560" y1="0" x2="560" y2={SVG_HEIGHT} stroke="#ffffff" strokeWidth="24" />
-            <line x1="560" y1="0" x2="560" y2={SVG_HEIGHT} stroke="#cbd5e1" strokeWidth="2" strokeDasharray="8 4" />
-            <text x="557" y="580" fill="#64748b" fontSize="9" fontWeight="bold" transform="rotate(-90, 557, 580)">AV. ABANCAY</text>
+            <line x1="560" y1="-500" x2="560" y2={SVG_HEIGHT + 500} stroke="#ffffff" strokeWidth="24" />
+            <line x1="560" y1="-500" x2="560" y2={SVG_HEIGHT + 500} stroke="#cbd5e1" strokeWidth="2" strokeDasharray="8 4" />
+            <text x="557" y="580" fill="#64748b" fontSize="8" fontWeight="bold" transform="rotate(-90, 557, 580)">AV. GOYENECHE / AV. ABANCAY</text>
           </g>
 
           {/* 4. Rutas Generales de Evacuación */}

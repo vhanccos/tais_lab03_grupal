@@ -101,6 +101,20 @@ export class StorageAdapter implements IStorageAdapter {
                   if (externo) externo.descripcion = parsed.planFamiliar.puntoEncuentroExterno;
                 }
                 parsed.planFamiliar.puntosEncuentro = defaultPuntos;
+              } else {
+                // Auto-migración si los puntos predeterminados almacenados en localStorage apuntan a Lima
+                parsed.planFamiliar.puntosEncuentro = parsed.planFamiliar.puntosEncuentro.map(punto => {
+                  if (punto.esPredeterminado && punto.coordenadas && punto.coordenadas.lat < -12.0 && punto.coordenadas.lat > -12.1) {
+                    const matchedDefault = DEFAULT_PUNTOS_ENCUENTRO.find(d => d.id === punto.id || d.tipo === punto.tipo);
+                    if (matchedDefault && matchedDefault.coordenadas) {
+                      return {
+                        ...punto,
+                        coordenadas: { ...matchedDefault.coordenadas }
+                      };
+                    }
+                  }
+                  return punto;
+                });
               }
             }
 
