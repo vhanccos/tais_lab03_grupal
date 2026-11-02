@@ -33,7 +33,9 @@ export function useGeolocation(): GeolocationState {
     });
     setAccuracy(pos.coords.accuracy ?? 15);
     setAltitude(pos.coords.altitude);
-    setHeading(pos.coords.heading);
+    if (typeof pos.coords.heading === 'number' && !isNaN(pos.coords.heading)) {
+      setHeading(pos.coords.heading);
+    }
     setSpeed(pos.coords.speed);
     setTimestamp(pos.timestamp);
     setCargando(false);
@@ -110,6 +112,30 @@ export function useGeolocation(): GeolocationState {
       }
     };
   }, [handleSuccess, handleError]);
+
+  // Support DeviceOrientation API for compass heading when device orientation is available
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.addEventListener) return;
+
+    const handleOrientation = (e: DeviceOrientationEvent) => {
+      // webkitCompassHeading on iOS, or alpha on Android
+      let compassHeading: number | null = null;
+      if (typeof (e as unknown as { webkitCompassHeading?: number }).webkitCompassHeading === 'number') {
+        compassHeading = (e as unknown as { webkitCompassHeading: number }).webkitCompassHeading;
+      } else if (typeof e.alpha === 'number') {
+        compassHeading = (360 - e.alpha) % 360;
+      }
+
+      if (compassHeading !== null && !isNaN(compassHeading)) {
+        setHeading(Math.round(compassHeading));
+      }
+    };
+
+    window.addEventListener('deviceorientation', handleOrientation, true);
+    return () => {
+      window.removeEventListener('deviceorientation', handleOrientation, true);
+    };
+  }, []);
 
   return {
     coords,

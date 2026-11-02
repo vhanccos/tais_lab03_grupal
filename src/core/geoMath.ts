@@ -123,6 +123,81 @@ export function projectGeoToSvg(
 }
 
 /**
+ * Maps 2D SVG canvas plane coordinates (x, y) back to geographic coordinates (lat, lng).
+ * Inverse function of projectGeoToSvg.
+ */
+export function unprojectSvgToGeo(
+  point: SvgPoint,
+  bounds: BoundsGeo,
+  svgWidth: number,
+  svgHeight: number
+): CoordenadaGeo {
+  const dLng = bounds.maxLng - bounds.minLng;
+  const dLat = bounds.maxLat - bounds.minLat;
+
+  if (svgWidth <= 0 || svgHeight <= 0) {
+    return {
+      lat: (bounds.minLat + bounds.maxLat) / 2,
+      lng: (bounds.minLng + bounds.maxLng) / 2
+    };
+  }
+
+  const lng = bounds.minLng + (point.x / svgWidth) * dLng;
+  const lat = bounds.maxLat - (point.y / svgHeight) * dLat;
+
+  return { lat, lng };
+}
+
+/**
+ * Computes an adaptive bounding box that encloses the user coordinate and all meeting points,
+ * ensuring margin padding and avoiding collapsed bounds.
+ */
+export function computeAdaptiveBounds(
+  userPos: CoordenadaGeo,
+  points: PuntoEncuentro[] = [],
+  paddingRatio: number = 0.25
+): BoundsGeo {
+  const coords: CoordenadaGeo[] = [userPos];
+
+  for (const p of points) {
+    if (p.coordenadas && typeof p.coordenadas.lat === 'number' && typeof p.coordenadas.lng === 'number') {
+      coords.push(p.coordenadas);
+    }
+  }
+
+  let minLat = coords[0].lat;
+  let maxLat = coords[0].lat;
+  let minLng = coords[0].lng;
+  let maxLng = coords[0].lng;
+
+  for (let i = 1; i < coords.length; i++) {
+    const c = coords[i];
+    if (c.lat < minLat) minLat = c.lat;
+    if (c.lat > maxLat) maxLat = c.lat;
+    if (c.lng < minLng) minLng = c.lng;
+    if (c.lng > maxLng) maxLng = c.lng;
+  }
+
+  // Minimum span to avoid hyper-zooming (approx ~1.5km minimum span)
+  const minSpanLat = 0.015;
+  const minSpanLng = 0.015;
+
+  let spanLat = Math.max(maxLat - minLat, minSpanLat);
+  let spanLng = Math.max(maxLng - minLng, minSpanLng);
+
+  // Apply padding ratio
+  const padLat = spanLat * paddingRatio;
+  const padLng = spanLng * paddingRatio;
+
+  return {
+    minLat: minLat - padLat,
+    maxLat: maxLat + padLat,
+    minLng: minLng - padLng,
+    maxLng: maxLng + padLng
+  };
+}
+
+/**
  * Formats distance in meters to a concise, human-readable string.
  * Examples: 45 m, 350 m, 1.2 km, 15 km.
  */
@@ -176,3 +251,5 @@ export function findNearestSafeZone(
     rumboGrados: Math.round(rumbo)
   };
 }
+
+export type { CoordenadaGeo, PuntoEncuentro };

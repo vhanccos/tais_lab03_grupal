@@ -49,3 +49,14 @@
   - Geolocation hook error handling and fallbacks.
 - [x] **T14**: Execute `npm test` verifying 100% pass rate across all project test suites.
 - [x] **T15**: Execute `npm run build` verifying clean TypeScript compilation (`tsc`) and Vite bundling.
+
+
+---
+
+## Phase 6: Convergence
+
+- [x] **T016**: Implement dynamic multi-district and custom geofenced SVG coordinate bounds per `plan: 2.3 Geographic to SVG Coordinate Projection` (partial)
+- [x] **T017**: Implement interactive tap-to-add custom meeting point directly on SVG map canvas with geo-reverse calculation per `FR-009`, `US3/AC3` (missing)
+- [x] **T018**: Implement SVG route calculation showing visual walking path line from user position to nearest safe point per `FR-008`, `FR-010` (partial)
+- [x] **T019**: Implement visual heading compass orienting user map marker based on device orientation API per `FR-006`, `plan: 3.1 useGeolocation` (partial)
+- [x] **T020**: Implement interactive custom layer toggle filters for safety circles, evacuation paths, and family points in SvgMapCanvas per `FR-011` (partial)
