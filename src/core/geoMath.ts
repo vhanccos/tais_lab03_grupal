@@ -19,19 +19,25 @@ export interface NearestPointResult {
   rumboGrados: number;
 }
 
-// Bounding box default for Lima Cercado & surrounding disaster-resilience safe zones
-export const DEFAULT_LIMA_BOUNDS: BoundsGeo = {
-  minLat: -12.065,
-  maxLat: -12.035,
-  minLng: -77.060,
-  maxLng: -77.025
+// Bounding box default for Arequipa Cercado / UNSA & surrounding disaster-resilience safe zones
+export const DEFAULT_AREQUIPA_BOUNDS: BoundsGeo = {
+  minLat: -16.420000,
+  maxLat: -16.395000,
+  minLng: -71.540000,
+  maxLng: -71.510000
 };
 
-// Default reference coordinates (Plaza Mayor / Cercado de Lima)
-export const DEFAULT_LIMA_CENTER: CoordenadaGeo = {
-  lat: -12.046374,
-  lng: -77.042793
+// Default reference coordinates (UNSA / Cercado de Arequipa: -16.4064328, -71.5253347)
+export const DEFAULT_AREQUIPA_CENTER: CoordenadaGeo = {
+  lat: -16.4064328,
+  lng: -71.5253347
 };
+
+// Aliases for backwards compatibility
+export const DEFAULT_LIMA_BOUNDS: BoundsGeo = DEFAULT_AREQUIPA_BOUNDS;
+export const DEFAULT_LIMA_CENTER: CoordenadaGeo = DEFAULT_AREQUIPA_CENTER;
+export const DEFAULT_MAP_BOUNDS: BoundsGeo = DEFAULT_AREQUIPA_BOUNDS;
+export const DEFAULT_MAP_CENTER: CoordenadaGeo = DEFAULT_AREQUIPA_CENTER;
 
 const EARTH_RADIUS_METERS = 6371000;
 

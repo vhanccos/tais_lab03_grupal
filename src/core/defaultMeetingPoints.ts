@@ -15,7 +15,7 @@ export const DEFAULT_PUNTOS_ENCUENTRO: PuntoEncuentro[] = [
     tipo: 'externo',
     descripcion: 'Círculo verde de 4.5m en el parque o losa deportiva más cercana, despejado de cables de alta tensión.',
     esPredeterminado: true,
-    coordenadas: { lat: -12.046374, lng: -77.042793 },
+    coordenadas: { lat: -16.4064328, lng: -71.5253347 },
     svgCoords: { x: 280, y: 320 }
   },
   {
@@ -24,7 +24,7 @@ export const DEFAULT_PUNTOS_ENCUENTRO: PuntoEncuentro[] = [
     tipo: 'comunitario',
     descripcion: 'Punto de reagrupación familiar si las vías inmediatas están bloqueadas: frontis de la iglesia o comisaría.',
     esPredeterminado: true,
-    coordenadas: { lat: -12.048500, lng: -77.045000 },
+    coordenadas: { lat: -16.407500, lng: -71.528000 },
     svgCoords: { x: 420, y: 410 }
   }
 ];

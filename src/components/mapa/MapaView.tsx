@@ -162,7 +162,7 @@ export const MapaView: React.FC = () => {
                 {cargando
                   ? 'Sincronizando satélites GPS…'
                   : esUbicacionSimulada
-                  ? 'Ubicación Aproximada (Lima)'
+                  ? 'Ubicación Predeterminada (Arequipa / UNSA)'
                   : 'GPS Satelital Activo'}
               </span>
               <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
