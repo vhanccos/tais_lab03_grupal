@@ -6,11 +6,9 @@ export interface DistritosPredefinidos {
   region: string;
   center: [number, number]; // [lat, lng]
   bounds: [[number, number], [number, number]]; // [[south, west], [north, east]]
-  zoomMin: number;
-  zoomMax: number;
   isDefault?: boolean;
-  tamanoAproxMB: number;
-  tilesBasePath: string;
+  tamanoAproxKB: number;
+  geojsonPath: string;
 }
 
 export const DISTRITOS_PERU: DistritosPredefinidos[] = [
@@ -23,11 +21,9 @@ export const DISTRITOS_PERU: DistritosPredefinidos[] = [
       [-16.4150, -71.5350],
       [-16.3980, -71.5150]
     ],
-    zoomMin: 13,
-    zoomMax: 18,
     isDefault: true,
-    tamanoAproxMB: 3.3,
-    tilesBasePath: '/tiles'
+    tamanoAproxKB: 226,
+    geojsonPath: '/distritos/arequipa-unsa.geojson'
   },
   {
     id: 'plaza-armas',
@@ -35,13 +31,11 @@ export const DISTRITOS_PERU: DistritosPredefinidos[] = [
     region: 'Arequipa',
     center: [-16.39889, -71.53694],
     bounds: [
-      [-16.4040, -71.5430],
-      [-16.3930, -71.5300]
+      [-16.4060, -71.5450],
+      [-16.3910, -71.5290]
     ],
-    zoomMin: 14,
-    zoomMax: 17,
-    tamanoAproxMB: 1.5,
-    tilesBasePath: '/tiles_distritos/plaza-armas'
+    tamanoAproxKB: 12,
+    geojsonPath: '/distritos/plaza-armas.geojson'
   },
   {
     id: 'yanahuara',
@@ -49,13 +43,11 @@ export const DISTRITOS_PERU: DistritosPredefinidos[] = [
     region: 'Arequipa',
     center: [-16.3875, -71.5420],
     bounds: [
-      [-16.3950, -71.5500],
-      [-16.3820, -71.5350]
+      [-16.3960, -71.5510],
+      [-16.3790, -71.5330]
     ],
-    zoomMin: 14,
-    zoomMax: 17,
-    tamanoAproxMB: 1.6,
-    tilesBasePath: '/tiles_distritos/yanahuara'
+    tamanoAproxKB: 11,
+    geojsonPath: '/distritos/yanahuara.geojson'
   },
   {
     id: 'paucarpata',
@@ -63,36 +55,18 @@ export const DISTRITOS_PERU: DistritosPredefinidos[] = [
     region: 'Arequipa',
     center: [-16.4250, -71.5200],
     bounds: [
-      [-16.4350, -71.5300],
-      [-16.4150, -71.5120]
+      [-16.4360, -71.5310],
+      [-16.4140, -71.5090]
     ],
-    zoomMin: 14,
-    zoomMax: 17,
-    tamanoAproxMB: 2.1,
-    tilesBasePath: '/tiles_distritos/paucarpata'
+    tamanoAproxKB: 11,
+    geojsonPath: '/distritos/paucarpata.geojson'
   }
 ];
 
-export const TILE_BOUNDS_UNSA = {
-  south: -16.4150,
-  west: -71.5350,
-  north: -16.3980,
-  east: -71.5150,
-  minZoom: 13,
-  maxZoom: 18
-};
-
-// Store para rastrear paquetes de distritos descargados localmente
-export const tileStore = localforage.createInstance({
-  name: 'sismolisto_offline_maps',
-  storeName: 'osm_tiles',
-  description: 'Almacenamiento persistente de teselas de mapas de OpenStreetMap'
-});
-
 export const districtPackageStore = localforage.createInstance({
-  name: 'sismolisto_offline_maps',
-  storeName: 'downloaded_districts',
-  description: 'Registro de paquetes distritales descargados'
+  name: 'sismolisto_vector_maps',
+  storeName: 'downloaded_vector_districts',
+  description: 'Almacenamiento de paquetes distritales GeoJSON'
 });
 
 /**
@@ -109,10 +83,9 @@ export function findDistrictByCoords(lat: number, lng: number): DistritosPredefi
 }
 
 /**
- * Consulta si un distrito ya está disponible offline en el dispositivo
+ * Consulta si un distrito vectorial ya fue descargado
  */
 export async function isDistrictDownloaded(districtId: string): Promise<boolean> {
-  // El distrito predeterminado (UNSA) viene precargado en la app
   if (districtId === 'arequipa-unsa') return true;
   try {
     const val = await districtPackageStore.getItem<boolean>(districtId);
@@ -123,21 +96,35 @@ export async function isDistrictDownloaded(districtId: string): Promise<boolean>
 }
 
 /**
- * Marca un distrito como descargado y disponible
+ * Marca un distrito como descargado
  */
 export async function markDistrictDownloaded(districtId: string): Promise<void> {
   await districtPackageStore.setItem(districtId, true);
 }
 
-export async function getTileCount(): Promise<number> {
+/**
+ * Carga el GeoJSON de un distrito (desde IndexedDB o fetch local)
+ */
+export async function loadDistrictGeoJson(distrito: DistritosPredefinidos): Promise<any> {
+  const cacheKey = `geojson_${distrito.id}`;
   try {
-    return await tileStore.length();
-  } catch {
-    return 0;
-  }
+    const cached = await districtPackageStore.getItem<any>(cacheKey);
+    if (cached) return cached;
+  } catch {}
+
+  // En Node.js/Vitest, paths relativos requieren base o fallback seguro
+  const url = typeof window !== 'undefined' && window.location?.origin
+    ? new URL(distrito.geojsonPath, window.location.origin).toString()
+    : distrito.geojsonPath;
+
+  const res = await fetch(url);
+  const data = await res.json();
+  try {
+    await districtPackageStore.setItem(cacheKey, data);
+  } catch {}
+  return data;
 }
 
 export async function clearAllTiles(): Promise<void> {
-  await tileStore.clear();
   await districtPackageStore.clear();
 }

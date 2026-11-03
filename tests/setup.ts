@@ -43,4 +43,34 @@ if (typeof window !== 'undefined') {
     writable: true,
     configurable: true
   });
+
+  // Mock Canvas 2D context for Leaflet Canvas renderer in jsdom
+  HTMLCanvasElement.prototype.getContext = function () {
+    return {
+      fillRect: () => {},
+      clearRect: () => {},
+      getImageData: () => ({ data: new Array(4) }),
+      putImageData: () => {},
+      createImageData: () => [],
+      setTransform: () => {},
+      drawImage: () => {},
+      save: () => {},
+      fillText: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      closePath: () => {},
+      stroke: () => {},
+      translate: () => {},
+      scale: () => {},
+      rotate: () => {},
+      arc: () => {},
+      fill: () => {},
+      measureText: () => ({ width: 0 }),
+      transform: () => {},
+      rect: () => {},
+      clip: () => {},
+    } as any;
+  };
 }

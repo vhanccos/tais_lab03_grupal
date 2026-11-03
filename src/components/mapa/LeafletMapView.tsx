@@ -7,7 +7,8 @@ import {
   DistritosPredefinidos,
   findDistrictByCoords,
   isDistrictDownloaded,
-  markDistrictDownloaded
+  markDistrictDownloaded,
+  loadDistrictGeoJson
 } from '../../core/offlineMapManager';
 import { HardDrive, ShieldCheck, Download, AlertCircle, CheckCircle2, Layers } from 'lucide-react';
 
@@ -36,13 +37,23 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
-  const layerGroupRef = useRef<L.LayerGroup | null>(null);
-  const districtPolygonsGroupRef = useRef<L.LayerGroup | null>(null);
+  const vectorGeoJsonGroupRef = useRef<L.LayerGroup | null>(null);
+  const boundaryBoxesGroupRef = useRef<L.LayerGroup | null>(null);
+  const markersGroupRef = useRef<L.LayerGroup | null>(null);
 
-  // Distritos descargados en estado local
+  // Distritos descargados
   const [downloadedDistricts, setDownloadedDistricts] = useState<Record<string, boolean>>({
     'arequipa-unsa': true
   });
+  const downloadedDistrictsRef = useRef<Record<string, boolean>>({ 'arequipa-unsa': true });
+
+  const isMountedRef = useRef<boolean>(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Popup de detección inicial de ubicación
   const [distritoDetectado, setDistritoDetectado] = useState<DistritosPredefinidos | null>(null);
@@ -53,19 +64,133 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
   const [descargandoZona, setDescargandoZona] = useState<boolean>(false);
   const [mensajeDescarga, setMensajeDescarga] = useState<string | null>(null);
 
-  // Cargar estado de distritos descargados desde almacenamiento
+  // Función para estilizar las geometrías vectoriales de forma limpia y moderna
+  const styleGeoJsonFeature = (feature: any) => {
+    const type = feature.properties?.type;
+    const subtype = feature.properties?.subtype;
+
+    if (type === 'building') {
+      return {
+        fillColor: '#cbd5e1',
+        fillOpacity: 0.8,
+        color: '#94a3b8',
+        weight: 1
+      };
+    }
+    if (type === 'leisure' || type === 'park') {
+      return {
+        fillColor: '#86efac',
+        fillOpacity: 0.65,
+        color: '#22c55e',
+        weight: 1.5
+      };
+    }
+    if (type === 'highway') {
+      const isPrimary = subtype === 'primary' || subtype === 'secondary' || subtype === 'tertiary';
+      return {
+        color: isPrimary ? '#f59e0b' : '#ffffff',
+        weight: isPrimary ? 3.5 : 2,
+        opacity: 0.95
+      };
+    }
+    if (type === 'boundary') {
+      return {
+        fillColor: '#f1f5f9',
+        fillOpacity: 0.4,
+        color: '#64748b',
+        weight: 1.5,
+        dashArray: '4, 4'
+      };
+    }
+    return {
+      fillColor: '#e2e8f0',
+      fillOpacity: 0.5,
+      color: '#cbd5e1',
+      weight: 1
+    };
+  };
+
+  // Cargar capas GeoJSON de distritos descargados en el mapa
+  const renderDownloadedDistricts = useCallback(async () => {
+    const group = vectorGeoJsonGroupRef.current;
+    if (!group) return;
+
+    group.clearLayers();
+
+    for (const d of DISTRITOS_PERU) {
+      if (downloadedDistrictsRef.current[d.id]) {
+        try {
+          const geojsonData = await loadDistrictGeoJson(d);
+          const geoJsonLayer = L.geoJSON(geojsonData, {
+            style: styleGeoJsonFeature,
+            onEachFeature: (feature, layer) => {
+              if (feature.properties?.name) {
+                layer.bindTooltip(feature.properties.name, {
+                  direction: 'center',
+                  className: 'map-vector-label'
+                });
+              }
+            }
+          });
+          group.addLayer(geoJsonLayer);
+        } catch (err) {
+          console.warn(`Error loading vector district ${d.id}:`, err);
+        }
+      }
+    }
+  }, []);
+
+  // Actualizar rectángulos perimetrales (descargados vs descargables al hacer click)
+  const updateBoundaryBoxes = useCallback(() => {
+    const group = boundaryBoxesGroupRef.current;
+    if (!group) return;
+
+    group.clearLayers();
+
+    DISTRITOS_PERU.forEach(d => {
+      const isDownloaded = Boolean(downloadedDistrictsRef.current[d.id]);
+      const bounds = L.latLngBounds(d.bounds[0], d.bounds[1]);
+
+      const rect = L.rectangle(bounds, {
+        color: isDownloaded ? '#10b981' : '#f59e0b',
+        weight: isDownloaded ? 2 : 2.5,
+        dashArray: isDownloaded ? undefined : '6, 6',
+        fillColor: isDownloaded ? '#10b981' : '#fef3c7',
+        fillOpacity: isDownloaded ? 0.02 : 0.28,
+        interactive: !isDownloaded
+      });
+
+      if (!isDownloaded) {
+        rect.on('click', e => {
+          L.DomEvent.stopPropagation(e);
+          setZonaSeleccionadaParaDescarga(d);
+        });
+        rect.bindTooltip(
+          `<b>📍 ${d.nombre}</b><br><span style="color:#d97706;font-size:11px">Zona no descargada · Clic para descargar datos (~${d.tamanoAproxKB} KB)</span>`,
+          { direction: 'center', permanent: false }
+        );
+      }
+
+      rect.addTo(group);
+    });
+  }, []);
+
+  // Inicializar estado de distritos
   useEffect(() => {
-    async function checkAll() {
+    async function initDistricts() {
       const status: Record<string, boolean> = { 'arequipa-unsa': true };
       for (const d of DISTRITOS_PERU) {
         if (d.id !== 'arequipa-unsa') {
           status[d.id] = await isDistrictDownloaded(d.id);
         }
       }
+      downloadedDistrictsRef.current = status;
       setDownloadedDistricts(status);
+      renderDownloadedDistricts();
+      updateBoundaryBoxes();
     }
-    checkAll();
-  }, []);
+    initDistricts();
+  }, [renderDownloadedDistricts, updateBoundaryBoxes]);
 
   // Detectar distrito de la ubicación actual
   useEffect(() => {
@@ -80,33 +205,48 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
     }
   }, [userCoords.lat, userCoords.lng]);
 
-  // Ejecutar descarga simulada / guardado de paquete distrital
-  const handleConfirmarDescarga = useCallback(async (distrito: DistritosPredefinidos) => {
-    setDescargandoZona(true);
-    setMensajeDescarga(`Descargando paquete offline para ${distrito.nombre}...`);
+  // Ejecutar descarga on-demand de datos GeoJSON de la zona seleccionada
+  const handleConfirmarDescarga = useCallback(
+    async (distrito: DistritosPredefinidos) => {
+      setDescargandoZona(true);
+      setMensajeDescarga(`Descargando datos vectoriales de ${distrito.nombre}...`);
 
-    try {
-      await new Promise(r => setTimeout(r, 600)); // Latencia de guardado
-      await markDistrictDownloaded(distrito.id);
-      setDownloadedDistricts(prev => ({ ...prev, [distrito.id]: true }));
-      setMensajeDescarga(`¡Listo! ${distrito.nombre} ahora está disponible 100% offline.`);
-      setZonaSeleccionadaParaDescarga(null);
-      setMostrarPopupDeteccion(false);
+      try {
+        await loadDistrictGeoJson(distrito);
+        await markDistrictDownloaded(distrito.id);
 
-      // Centrar mapa en la zona descargada
-      if (mapRef.current) {
-        mapRef.current.flyTo(distrito.center, 15, { animate: true });
+        downloadedDistrictsRef.current[distrito.id] = true;
+        setDownloadedDistricts({ ...downloadedDistrictsRef.current });
+
+        await renderDownloadedDistricts();
+        updateBoundaryBoxes();
+
+        if (!isMountedRef.current) return;
+        setMensajeDescarga(`¡Completado! ${distrito.nombre} renderizado 100% offline.`);
+        setZonaSeleccionadaParaDescarga(null);
+        setMostrarPopupDeteccion(false);
+
+        if (mapRef.current) {
+          mapRef.current.flyTo(distrito.center, 15, { animate: true });
+        }
+
+        setTimeout(() => {
+          if (isMountedRef.current) setMensajeDescarga(null);
+        }, 3500);
+      } catch (err) {
+        if (isMountedRef.current) {
+          setMensajeDescarga('Error al descargar los datos vectoriales de la zona.');
+        }
+      } finally {
+        if (isMountedRef.current) {
+          setDescargandoZona(false);
+        }
       }
+    },
+    [renderDownloadedDistricts, updateBoundaryBoxes]
+  );
 
-      setTimeout(() => setMensajeDescarga(null), 3500);
-    } catch {
-      setMensajeDescarga('Error al descargar el paquete de la zona.');
-    } finally {
-      setDescargandoZona(false);
-    }
-  }, []);
-
-  // Inicializar mapa Leaflet con capa 100% libre de requests no controlados
+  // Inicializar mapa Leaflet con Canvas/SVG vectorial puro (CERO peticiones de imágenes a internet)
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
@@ -117,70 +257,28 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
       minZoom: 13,
       maxZoom: 18,
       zoomControl: false,
-      attributionControl: false
+      attributionControl: false,
+      preferCanvas: true
     });
 
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    // Límites de navegación seguros para toda el área metropolitana de Arequipa
-    const maxBounds = L.latLngBounds([-16.445, -71.565], [-16.375, -71.505]);
-    map.setMaxBounds(maxBounds);
-    map.options.maxBoundsViscosity = 0.8;
+    // Fondo cartográfico limpio y neutral (sin imágenes externas)
+    containerRef.current.style.backgroundColor = '#f1f5f9';
 
-    // Capa de teselas locales: NUNCA hace llamadas a servidores externos
-    const StrictLocalTileLayer = L.TileLayer.extend({
-      getTileUrl: function (coords: { z: number; x: number; y: number }) {
-        // 1. Probar en el paquete base de UNSA
-        return `/tiles/${coords.z}/${coords.x}/${coords.y}.png`;
-      },
-      createTile: function (coords: { z: number; x: number; y: number }, done: any) {
-        const tile = document.createElement('img');
-        tile.alt = 'Mapa';
-        tile.setAttribute('role', 'presentation');
+    // Grupo 1: Geometrías vectoriales (calles, edificios, manzanas)
+    const vectorGroup = L.layerGroup().addTo(map);
+    vectorGeoJsonGroupRef.current = vectorGroup;
 
-        L.DomEvent.on(tile, 'load', L.Util.bind(this._tileOnLoad, this, done, tile));
-        L.DomEvent.on(tile, 'error', () => {
-          // Si no está en /tiles, revisar si pertenece a un paquete distrital descargado
-          // Verificar en distritos descargados
-          let found = false;
-          for (const d of DISTRITOS_PERU) {
-            if (downloadedDistricts[d.id] && d.tilesBasePath !== '/tiles') {
-              tile.src = `${d.tilesBasePath}/${coords.z}/${coords.x}/${coords.y}.png`;
-              found = true;
-              break;
-            }
-          }
+    // Grupo 2: Límites distritales interactivos
+    const boundaryGroup = L.layerGroup().addTo(map);
+    boundaryBoxesGroupRef.current = boundaryGroup;
 
-          if (!found) {
-            // Cero peticiones de red hacia afuera: mostrar celda neutral amigable
-            tile.style.backgroundColor = '#f8fafc';
-            tile.style.border = '0.5px dashed #e2e8f0';
-            done(null, tile);
-          }
-        });
+    // Grupo 3: Marcadores y corredores de escape
+    const markersGroup = L.layerGroup().addTo(map);
+    markersGroupRef.current = markersGroup;
 
-        tile.src = this.getTileUrl(coords);
-        return tile;
-      }
-    });
-
-    const localLayer = new (StrictLocalTileLayer as any)('', {
-      minZoom: 13,
-      maxZoom: 18,
-      tileSize: 256
-    });
-
-    localLayer.addTo(map);
-
-    // Capa de contornos de distritos y zonas descargables
-    const districtGroup = L.layerGroup().addTo(map);
-    districtPolygonsGroupRef.current = districtGroup;
-
-    // Capa para geometrías, corredores y marcadores
-    const layerGroup = L.layerGroup().addTo(map);
-    layerGroupRef.current = layerGroup;
-
-    // Evento de click en el mapa
+    // Evento de click para registrar nuevos puntos
     map.on('click', (e: L.LeafletMouseEvent) => {
       onTapLocation?.({
         lat: e.latlng.lat,
@@ -190,51 +288,20 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
 
     mapRef.current = map;
 
+    // Render inicial
+    renderDownloadedDistricts();
+    updateBoundaryBoxes();
+
     return () => {
       map.remove();
       mapRef.current = null;
     };
   }, []);
 
-  // Actualizar rectángulos de distritos (zonas descargadas vs no descargadas para click)
-  useEffect(() => {
-    const group = districtPolygonsGroupRef.current;
-    if (!group) return;
-
-    group.clearLayers();
-
-    DISTRITOS_PERU.forEach(d => {
-      const isDownloaded = Boolean(downloadedDistricts[d.id]);
-      const bounds = L.latLngBounds(d.bounds[0], d.bounds[1]);
-
-      const rect = L.rectangle(bounds, {
-        color: isDownloaded ? '#10b981' : '#f59e0b',
-        weight: isDownloaded ? 1.5 : 2,
-        dashArray: isDownloaded ? undefined : '5, 5',
-        fillColor: isDownloaded ? '#10b981' : '#fef3c7',
-        fillOpacity: isDownloaded ? 0.04 : 0.25,
-        interactive: !isDownloaded
-      });
-
-      if (!isDownloaded) {
-        rect.on('click', e => {
-          L.DomEvent.stopPropagation(e);
-          setZonaSeleccionadaParaDescarga(d);
-        });
-        rect.bindTooltip(
-          `<b>📍 ${d.nombre}</b><br><span style="color:#d97706;font-size:11px">Zona no descargada · Clic para descargar (${d.tamanoAproxMB} MB)</span>`,
-          { direction: 'center', permanent: false }
-        );
-      }
-
-      rect.addTo(group);
-    });
-  }, [downloadedDistricts]);
-
   // Actualizar marcadores, radio INDECI y corredor directo de escape
   useEffect(() => {
     const map = mapRef.current;
-    const layerGroup = layerGroupRef.current;
+    const layerGroup = markersGroupRef.current;
     if (!map || !layerGroup) return;
 
     layerGroup.clearLayers();
@@ -249,7 +316,7 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
         color: '#2563eb',
         weight: 3.5,
         dashArray: '8, 8',
-        opacity: 0.9
+        opacity: 0.95
       }).addTo(layerGroup);
     }
 
@@ -383,7 +450,7 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
 
   return (
     <div className="space-y-3" data-testid="leaflet-map-view">
-      {/* 1. Barra Informativa de Estado Offline y Cobertura */}
+      {/* 1. Barra Informativa de Estado Vectorial Offline */}
       <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-xs flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700">
@@ -395,11 +462,11 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
                 {distritoDetectado ? distritoDetectado.nombre : 'Arequipa - Campus UNSA Ingenierías'}
               </span>
               <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                100% Offline
+                Vectorial Offline
               </span>
             </div>
             <p className="text-[11px] text-slate-500">
-              {Object.values(downloadedDistricts).filter(Boolean).length} de {DISTRITOS_PERU.length} zonas distritales disponibles en dispositivo
+              {Object.values(downloadedDistricts).filter(Boolean).length} de {DISTRITOS_PERU.length} distritos vectoriales en dispositivo (Sin capturas PNG)
             </p>
           </div>
         </div>
@@ -407,12 +474,12 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl font-medium">
             <HardDrive className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Sin solicitudes de red externas</span>
+            <span>0 peticiones externas · Datos GeoJSON</span>
           </div>
         </div>
       </div>
 
-      {/* 2. Notificación flotante de estado de descarga */}
+      {/* 2. Notificación de estado de descarga */}
       {mensajeDescarga && (
         <div
           className="text-xs p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-2 shadow-xs transition-all animate-fade-in"
@@ -443,12 +510,12 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
             <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
               <p className="text-xs font-bold text-slate-800">{distritoDetectado.nombre}</p>
               <p className="text-[11px] text-slate-500 mt-1">
-                Paquete offline comprimido: <strong>~{distritoDetectado.tamanoAproxMB} MB</strong>
+                Paquete de datos GeoJSON: <strong>~{distritoDetectado.tamanoAproxKB} KB</strong>
               </p>
             </div>
 
             <p className="text-xs text-slate-600">
-              ¿Deseas descargar el mapa de este distrito ahora para que esté disponible sin conexión ante un sismo?
+              ¿Deseas descargar el mapa vectorial de este distrito ahora para tenerlo disponible sin internet ante un sismo?
             </p>
 
             <div className="flex items-center justify-end gap-2 pt-2">
@@ -465,7 +532,7 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
                 data-testid="btn-confirmar-descarga-deteccion"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>{descargandoZona ? 'Descargando...' : 'Descargar Zona'}</span>
+                <span>{descargandoZona ? 'Descargando...' : 'Descargar Datos Vectoriales'}</span>
               </button>
             </div>
           </div>
@@ -485,19 +552,19 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
               </div>
               <div>
                 <h3 className="font-bold text-slate-900 text-base">Descargar Cuadrante Distrital</h3>
-                <p className="text-xs text-slate-500">Has seleccionado una zona fuera de tu cobertura actual</p>
+                <p className="text-xs text-slate-500">Zona fuera de tu cobertura actual</p>
               </div>
             </div>
 
             <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
               <p className="text-xs font-bold text-slate-800">{zonaSeleccionadaParaDescarga.nombre}</p>
               <p className="text-[11px] text-slate-500 mt-1">
-                Paquete offline: <strong>~{zonaSeleccionadaParaDescarga.tamanoAproxMB} MB</strong> · Zoom 14 a 17
+                Paquete vectorial liviano: <strong>~{zonaSeleccionadaParaDescarga.tamanoAproxKB} KB</strong>
               </p>
             </div>
 
             <p className="text-xs text-slate-600">
-              Al descargar esta zona, quedará almacenada permanentemente en tu dispositivo para navegarla libremente sin internet.
+              Al descargar esta zona, sus calles, manzanas y áreas seguras se renderizarán directamente en el mapa sin imágenes ni internet.
             </p>
 
             <div className="flex items-center justify-end gap-2 pt-2">

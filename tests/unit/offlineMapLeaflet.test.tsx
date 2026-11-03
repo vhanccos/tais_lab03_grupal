@@ -20,7 +20,7 @@ describe('Offline Distrital Map Management (Detección GPS & Descarga On-Demand)
 
     const plazaArmas = DISTRITOS_PERU.find(d => d.id === 'plaza-armas');
     expect(plazaArmas).toBeDefined();
-    expect(plazaArmas?.tamanoAproxMB).toBeGreaterThan(0);
+    expect(plazaArmas?.tamanoAproxKB).toBeGreaterThan(0);
   });
 
   it('findDistrictByCoords detecta correctamente el distrito según la posición GPS', () => {
@@ -82,6 +82,6 @@ describe('Offline Distrital Map Management (Detección GPS & Descarga On-Demand)
 
     expect(screen.getByTestId('mapa-view')).toBeInTheDocument();
     expect(screen.getByTestId('leaflet-map-view')).toBeInTheDocument();
-    expect(screen.getByText(/Sin solicitudes de red externas/i)).toBeInTheDocument();
+    expect(screen.getByText(/0 peticiones externas/i)).toBeInTheDocument();
   });
 });
