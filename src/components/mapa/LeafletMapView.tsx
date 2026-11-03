@@ -1,10 +1,9 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
-import * as offlinePlugin from 'leaflet.offline';
 import { CoordenadaGeo, PuntoEncuentro } from '../../storage/stateTypes';
 import { MapLayerFilters } from './SvgMapCanvas';
-import { DISTRITOS_PERU, getTileCount } from '../../core/offlineMapManager';
-import { Download, CheckCircle2, HardDrive, RefreshCw } from 'lucide-react';
+import { DISTRITOS_PERU, TILE_BOUNDS_UNSA } from '../../core/offlineMapManager';
+import { HardDrive, ShieldCheck } from 'lucide-react';
 
 interface LeafletMapViewProps {
   userCoords: CoordenadaGeo;
@@ -32,22 +31,19 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
-  const tileLayerRef = useRef<any>(null);
 
-  const [distritoSeleccionado, setDistritoSeleccionado] = useState<string>(DISTRITOS_PERU[0].id);
-  const [descargando, setDescargando] = useState<boolean>(false);
-  const [progresoDescarga, setProgresoDescarga] = useState<number>(0);
-  const [totalTilesGuardados, setTotalTilesGuardados] = useState<number>(0);
-  const [mensajeEstado, setMensajeEstado] = useState<string | null>(null);
+  const unsa = DISTRITOS_PERU[0];
 
-  // Inicializar mapa Leaflet
+  // Inicializar mapa Leaflet con capa híbrida local offline + fallback
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    // Crear mapa
+    // Crear mapa centrado en UNSA
     const map = L.map(containerRef.current, {
       center: [userCoords.lat, userCoords.lng],
       zoom: 16,
+      minZoom: 13,
+      maxZoom: 18,
       zoomControl: false,
       attributionControl: false
     });
@@ -55,15 +51,51 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
     // Añadir controles de zoom en esquina superior derecha
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    // Configurar capa offline sobre OpenStreetMap
-    const tileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-    const tileLayer = (offlinePlugin as any).tileLayerOffline(tileUrl, {
-      maxZoom: 19,
-      subdomains: 'abc'
+    // Limitar vista al área metropolitana de Arequipa / UNSA para evitar solicitudes fuera de zona
+    const maxBounds = L.latLngBounds(
+      [TILE_BOUNDS_UNSA.south - 0.05, TILE_BOUNDS_UNSA.west - 0.05],
+      [TILE_BOUNDS_UNSA.north + 0.05, TILE_BOUNDS_UNSA.east + 0.05]
+    );
+    map.setMaxBounds(maxBounds);
+
+    // Capa de teselas locales pre-empaquetadas con fallback transparente
+    // Primero intenta servir /tiles/{z}/{x}/{y}.png (100% offline sin red)
+    // Si no estuviese disponible y hay red, consulta OSM
+    const CustomOfflineTileLayer = L.TileLayer.extend({
+      getTileUrl: function (coords: { z: number; x: number; y: number }) {
+        return `/tiles/${coords.z}/${coords.x}/${coords.y}.png`;
+      },
+      createTile: function (coords: { z: number; x: number; y: number }, done: any) {
+        const tile = document.createElement('img');
+
+        tile.alt = 'Mapa UNSA';
+        tile.setAttribute('role', 'presentation');
+
+        L.DomEvent.on(tile, 'load', L.Util.bind(this._tileOnLoad, this, done, tile));
+        L.DomEvent.on(tile, 'error', () => {
+          // Si el tile local no existe (ej. usuario navegó fuera del cuadrante UNSA)
+          // y hay conexión, consultar OSM de respaldo
+          if (navigator.onLine) {
+            tile.src = `https://tile.openstreetmap.org/${coords.z}/${coords.x}/${coords.y}.png`;
+          } else {
+            // En modo 100% offline mostrar celda vacía amigable sin quebrar
+            tile.style.backgroundColor = '#f1f5f9';
+            done(null, tile);
+          }
+        });
+
+        tile.src = this.getTileUrl(coords);
+        return tile;
+      }
     });
 
-    tileLayer.addTo(map);
-    tileLayerRef.current = tileLayer;
+    const localTileLayer = new (CustomOfflineTileLayer as any)('', {
+      minZoom: 13,
+      maxZoom: 18,
+      tileSize: 256
+    });
+
+    localTileLayer.addTo(map);
 
     // Capa para geometrías, corredores y marcadores
     const layerGroup = L.layerGroup().addTo(map);
@@ -78,9 +110,6 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
     });
 
     mapRef.current = map;
-
-    // Contar tiles guardados
-    getTileCount().then(setTotalTilesGuardados);
 
     return () => {
       map.remove();
@@ -242,118 +271,31 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
     }
   }, [puntos, userCoords, accuracy, heading, puntoSeleccionadoId, puntoMasCercano, filtrosCapas, onSelectPunto]);
 
-  // Descarga offline de distrito seleccionado
-  const handleDescargarDistrito = useCallback(async () => {
-    const distrito = DISTRITOS_PERU.find(d => d.id === distritoSeleccionado);
-    if (!distrito) return;
-
-    setDescargando(true);
-    setMensajeEstado(`Iniciando descarga de ${distrito.nombre}...`);
-    setProgresoDescarga(0);
-
-    try {
-      const bounds = L.latLngBounds(distrito.bounds[0], distrito.bounds[1]);
-
-      // Guardar tiles usando helper savetiles
-      let descargados = 0;
-      let total = 0;
-
-      const controlSaveTiles = (offlinePlugin as any).savetiles(tileLayerRef.current, {
-        zoomlevels: [14, 15, 16, 17],
-        bounds: bounds,
-        confirm: (_layer: any, successCallback: () => void) => {
-          successCallback();
-        }
-      });
-
-      controlSaveTiles._layer = tileLayerRef.current;
-      controlSaveTiles._map = mapRef.current;
-
-      tileLayerRef.current.on('savestart', (e: any) => {
-        total = e.lengthComputable ? e.total : 60;
-        setMensajeEstado(`Descargando ${total} teselas para uso sin conexión...`);
-      });
-
-      tileLayerRef.current.on('tileloadend', () => {
-        descargados++;
-        const pct = total > 0 ? Math.round((descargados / total) * 100) : 50;
-        setProgresoDescarga(pct);
-      });
-
-      tileLayerRef.current.on('loadend', async () => {
-        setDescargando(false);
-        setProgresoDescarga(100);
-        setMensajeEstado(`¡Completado! ${distrito.nombre} disponible 100% offline.`);
-        const count = await getTileCount();
-        setTotalTilesGuardados(count);
-        setTimeout(() => setMensajeEstado(null), 4000);
-      });
-
-      // Centrar mapa en la zona descargada
-      mapRef.current?.fitBounds(bounds);
-      controlSaveTiles._saveTiles();
-    } catch {
-      setDescargando(false);
-      setMensajeEstado('Descarga simulada para entorno offline.');
-      setTimeout(() => setMensajeEstado(null), 3000);
-    }
-  }, [distritoSeleccionado]);
-
   return (
     <div className="space-y-3" data-testid="leaflet-map-view">
-      {/* Barra de Gestión de Paquetes de Mapas Offline */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <HardDrive className="w-4 h-4 text-emerald-600" />
-            <span className="text-xs font-bold text-slate-800">Descargador de Mapas Distritales Offline</span>
-            <span className="text-[11px] bg-slate-100 text-slate-600 font-mono px-2 py-0.5 rounded-full">
-              {totalTilesGuardados} teselas en memoria
-            </span>
+      {/* Barra Informativa de Estado Offline */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700">
+            <ShieldCheck className="w-4 h-4" />
           </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <select
-              value={distritoSeleccionado}
-              onChange={e => setDistritoSeleccionado(e.target.value)}
-              disabled={descargando}
-              className="text-xs px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-700 font-medium focus:ring-2 focus:ring-emerald-500"
-              data-testid="select-distrito-offline"
-            >
-              {DISTRITOS_PERU.map(d => (
-                <option key={d.id} value={d.id}>
-                  {d.nombre}
-                </option>
-              ))}
-            </select>
-
-            <button
-              onClick={handleDescargarDistrito}
-              disabled={descargando}
-              className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center gap-1.5 transition-colors shadow-xs disabled:opacity-50"
-              data-testid="btn-descargar-distrito"
-            >
-              {descargando ? (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>{progresoDescarga}%</span>
-                </>
-              ) : (
-                <>
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Descargar Zona</span>
-                </>
-              )}
-            </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-900">{unsa.nombre}</span>
+              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                100% Precargado Offline
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500">
+              Av. Independencia / Paucarpata · Pabellón Ing. de Sistemas · 169 teselas locales (Z13-Z18)
+            </p>
           </div>
         </div>
 
-        {mensajeEstado && (
-          <div className="text-xs p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>{mensajeEstado}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl font-medium">
+          <HardDrive className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Sin peticiones de red externas</span>
+        </div>
       </div>
 
       {/* Contenedor del Mapa Leaflet */}

@@ -10,6 +10,7 @@ export interface DistritosPredefinidos {
   zoomMax: number;
 }
 
+// Distrito único enfocado exclusivamente en Arequipa - Campus UNSA Ingenierías / Cercado
 export const DISTRITOS_PERU: DistritosPredefinidos[] = [
   {
     id: 'arequipa-unsa',
@@ -22,44 +23,17 @@ export const DISTRITOS_PERU: DistritosPredefinidos[] = [
     ],
     zoomMin: 14,
     zoomMax: 18
-  },
-  {
-    id: 'arequipa-cercado',
-    nombre: 'Arequipa - Centro Histórico / Plaza de Armas',
-    region: 'Arequipa',
-    center: [-16.39889, -71.53694],
-    bounds: [
-      [-16.4100, -71.5480],
-      [-16.3880, -71.5250]
-    ],
-    zoomMin: 14,
-    zoomMax: 17
-  },
-  {
-    id: 'lima-cercado',
-    nombre: 'Lima - Cercado de Lima / Plaza Mayor',
-    region: 'Lima',
-    center: [-12.04637, -77.04279],
-    bounds: [
-      [-12.0600, -77.0550],
-      [-12.0350, -77.0250]
-    ],
-    zoomMin: 14,
-    zoomMax: 17
-  },
-  {
-    id: 'lima-miraflores',
-    nombre: 'Lima - Miraflores / Parque Kennedy',
-    region: 'Lima',
-    center: [-12.1211, -77.0305],
-    bounds: [
-      [-12.1350, -77.0450],
-      [-12.1050, -77.0150]
-    ],
-    zoomMin: 14,
-    zoomMax: 17
   }
 ];
+
+export const TILE_BOUNDS_UNSA = {
+  south: -16.4150,
+  west: -71.5350,
+  north: -16.3980,
+  east: -71.5150,
+  minZoom: 14,
+  maxZoom: 18
+};
 
 export const tileStore = localforage.createInstance({
   name: 'sismolisto_offline_maps',

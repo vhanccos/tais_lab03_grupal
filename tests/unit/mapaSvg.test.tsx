@@ -496,6 +496,6 @@ describe('Feature 002: MapaView Coordinator & Navigation Integration', () => {
     fireEvent.click(tabMapa);
 
     expect(screen.getByTestId('mapa-view')).toBeInTheDocument();
-    expect(screen.getByTestId('svg-map-canvas')).toBeInTheDocument();
+    expect(screen.getByTestId('leaflet-map-view')).toBeInTheDocument();
   });
 });

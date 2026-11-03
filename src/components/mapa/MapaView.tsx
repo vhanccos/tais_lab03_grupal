@@ -26,20 +26,11 @@ import {
   findNearestSafeZone
 } from '../../core/geoMath';
 import { CoordenadaGeo, PuntoEncuentro } from '../../storage/stateTypes';
-import { SvgMapCanvas, MapLayerFilters, DEFAULT_LAYER_FILTERS } from './SvgMapCanvas';
+import { MapLayerFilters, DEFAULT_LAYER_FILTERS } from './SvgMapCanvas';
 import { LeafletMapView } from './LeafletMapView';
 import { NearestPointRadar } from './NearestPointRadar';
 
-interface MapaViewProps {
-  initialMotor?: 'osm' | 'svg';
-}
-
-export const MapaView: React.FC<MapaViewProps> = ({ initialMotor }) => {
-  const [motorMapa, setMotorMapa] = useState<'osm' | 'svg'>(() => {
-    if (initialMotor) return initialMotor;
-    const isTest = typeof process !== 'undefined' && (process.env?.NODE_ENV === 'test' || Boolean(process.env?.VITEST));
-    return isTest ? 'svg' : 'osm';
-  });
+export const MapaView: React.FC = () => {
   const {
     coords,
     accuracy,
@@ -62,12 +53,13 @@ export const MapaView: React.FC<MapaViewProps> = ({ initialMotor }) => {
 
   // Compute adaptive bounding box dynamically (T016)
   const [usarEncuadreDinamico, setUsarEncuadreDinamico] = useState<boolean>(true);
-  const bounds = useMemo(() => {
+  const _bounds = useMemo(() => {
     if (usarEncuadreDinamico) {
       return computeAdaptiveBounds(coords, puntosDisponibles, 0.3);
     }
     return DEFAULT_LIMA_BOUNDS;
   }, [usarEncuadreDinamico, coords, puntosDisponibles]);
+  void _bounds;
 
   // Nearest safe zone for direct path rendering
   const nearestResult = useMemo(() => {
@@ -75,7 +67,8 @@ export const MapaView: React.FC<MapaViewProps> = ({ initialMotor }) => {
   }, [coords, puntosDisponibles]);
 
   const [zoom, setZoom] = useState<number>(1);
-  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [_pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  void _pan;
   const [puntoSeleccionado, setPuntoSeleccionado] = useState<PuntoEncuentro | null>(null);
 
   // Layer filters state (T020)
@@ -259,32 +252,8 @@ export const MapaView: React.FC<MapaViewProps> = ({ initialMotor }) => {
           </button>
         </div>
 
-        {/* Motor selector (Leaflet OSM vs Vector SVG), Dynamic bounds toggle & Layers filter toggle */}
+        {/* Dynamic bounds toggle & Layers filter toggle */}
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="bg-slate-100 p-0.5 rounded-xl border border-slate-200 flex items-center text-xs">
-            <button
-              onClick={() => setMotorMapa('osm')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
-                motorMapa === 'osm'
-                  ? 'bg-white text-emerald-800 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              data-testid="btn-motor-osm"
-            >
-              🗺️ OpenStreetMap Offline
-            </button>
-            <button
-              onClick={() => setMotorMapa('svg')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
-                motorMapa === 'svg'
-                  ? 'bg-white text-blue-800 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              data-testid="btn-motor-svg"
-            >
-              📐 Plano Vectorial UNSA
-            </button>
-          </div>
 
           <button
             onClick={() => setUsarEncuadreDinamico(prev => !prev)}
@@ -386,36 +355,18 @@ export const MapaView: React.FC<MapaViewProps> = ({ initialMotor }) => {
         </div>
       </div>
 
-      {/* 4. Active Map Canvas: Leaflet OpenStreetMap vs Offline Vector SVG */}
-      {motorMapa === 'osm' ? (
-        <LeafletMapView
-          userCoords={coords}
-          accuracy={accuracy}
-          heading={heading}
-          puntos={puntosDisponibles}
-          puntoSeleccionadoId={puntoSeleccionado?.id}
-          onSelectPunto={handleSelectPunto}
-          puntoMasCercano={nearestResult?.punto}
-          filtrosCapas={filtrosCapas}
-          onTapLocation={handleMapTap}
-        />
-      ) : (
-        <SvgMapCanvas
-          userCoords={coords}
-          accuracy={accuracy}
-          heading={heading}
-          puntos={puntosDisponibles}
-          bounds={bounds}
-          zoom={zoom}
-          pan={pan}
-          onPanChange={setPan}
-          puntoSeleccionadoId={puntoSeleccionado?.id}
-          onSelectPunto={handleSelectPunto}
-          puntoMasCercano={nearestResult?.punto}
-          filtrosCapas={filtrosCapas}
-          onTapLocation={handleMapTap}
-        />
-      )}
+      {/* 4. Active Map Canvas: Leaflet OpenStreetMap Offline */}
+      <LeafletMapView
+        userCoords={coords}
+        accuracy={accuracy}
+        heading={heading}
+        puntos={puntosDisponibles}
+        puntoSeleccionadoId={puntoSeleccionado?.id}
+        onSelectPunto={handleSelectPunto}
+        puntoMasCercano={nearestResult?.punto}
+        filtrosCapas={filtrosCapas}
+        onTapLocation={handleMapTap}
+      />
 
       {/* Modal / Drawer to Save Tap Point (T017) */}
       {tapCoords && (
