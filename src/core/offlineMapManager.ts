@@ -1,4 +1,5 @@
 import localforage from 'localforage';
+import availableTiles from '../data/availableLocalTiles.json';
 
 export interface DistritosPredefinidos {
   id: string;
@@ -6,11 +7,22 @@ export interface DistritosPredefinidos {
   region: string;
   center: [number, number]; // [lat, lng]
   bounds: [[number, number], [number, number]]; // [[south, west], [north, east]]
+  zoomMin: number;
+  zoomMax: number;
   isDefault?: boolean;
-  tamanoAproxKB: number;
-  geojsonPath: string;
 }
 
+// Bounding box rigurosa del paquete de teselas OpenStreetMap precargadas
+export const TILE_BOUNDS_UNSA = {
+  south: -16.4150,
+  west: -71.5374,
+  north: -16.3939,
+  east: -71.5100,
+  zoomMin: 14,
+  zoomMax: 18
+};
+
+// Distrito único y enfocado exclusivamente en Arequipa - Campus UNSA Ingenierías / Cercado
 export const DISTRITOS_PERU: DistritosPredefinidos[] = [
   {
     id: 'arequipa-unsa',
@@ -18,113 +30,45 @@ export const DISTRITOS_PERU: DistritosPredefinidos[] = [
     region: 'Arequipa',
     center: [-16.40643, -71.52533],
     bounds: [
-      [-16.4150, -71.5350],
-      [-16.3980, -71.5150]
+      [TILE_BOUNDS_UNSA.south, TILE_BOUNDS_UNSA.west],
+      [TILE_BOUNDS_UNSA.north, TILE_BOUNDS_UNSA.east]
     ],
-    isDefault: true,
-    tamanoAproxKB: 226,
-    geojsonPath: '/distritos/arequipa-unsa.geojson'
-  },
-  {
-    id: 'plaza-armas',
-    nombre: 'Arequipa - Centro Histórico / Plaza de Armas',
-    region: 'Arequipa',
-    center: [-16.39889, -71.53694],
-    bounds: [
-      [-16.4060, -71.5450],
-      [-16.3910, -71.5290]
-    ],
-    tamanoAproxKB: 12,
-    geojsonPath: '/distritos/plaza-armas.geojson'
-  },
-  {
-    id: 'yanahuara',
-    nombre: 'Arequipa - Yanahuara / Mirador',
-    region: 'Arequipa',
-    center: [-16.3875, -71.5420],
-    bounds: [
-      [-16.3960, -71.5510],
-      [-16.3790, -71.5330]
-    ],
-    tamanoAproxKB: 11,
-    geojsonPath: '/distritos/yanahuara.geojson'
-  },
-  {
-    id: 'paucarpata',
-    nombre: 'Arequipa - Paucarpata / JL Bustamante',
-    region: 'Arequipa',
-    center: [-16.4250, -71.5200],
-    bounds: [
-      [-16.4360, -71.5310],
-      [-16.4140, -71.5090]
-    ],
-    tamanoAproxKB: 11,
-    geojsonPath: '/distritos/paucarpata.geojson'
+    zoomMin: TILE_BOUNDS_UNSA.zoomMin,
+    zoomMax: TILE_BOUNDS_UNSA.zoomMax,
+    isDefault: true
   }
 ];
 
-export const districtPackageStore = localforage.createInstance({
-  name: 'sismolisto_vector_maps',
-  storeName: 'downloaded_vector_districts',
-  description: 'Almacenamiento de paquetes distritales GeoJSON'
-});
+// Set en memoria de las teselas locales existentes para verificación O(1)
+const availableTilesSet = new Set<string>(availableTiles);
 
 /**
- * Determina si unas coordenadas GPS caen dentro de los límites de un distrito
+ * Verifica si una coordenada de tile (z/x/y) existe localmente en el paquete precargado
  */
-export function findDistrictByCoords(lat: number, lng: number): DistritosPredefinidos | null {
-  for (const d of DISTRITOS_PERU) {
-    const [[south, west], [north, east]] = d.bounds;
-    if (lat >= south && lat <= north && lng >= west && lng <= east) {
-      return d;
-    }
+export function hasLocalTile(z: number, x: number, y: number): boolean {
+  return availableTilesSet.has(`${z}/${x}/${y}.png`);
+}
+
+/**
+ * Obtiene la URL local de una tesela o null si está fuera de cobertura
+ */
+export function getLocalTileUrl(z: number, x: number, y: number): string | null {
+  if (hasLocalTile(z, x, y)) {
+    return `/tiles/${z}/${x}/${y}.png`;
   }
   return null;
 }
 
-/**
- * Consulta si un distrito vectorial ya fue descargado
- */
-export async function isDistrictDownloaded(districtId: string): Promise<boolean> {
-  if (districtId === 'arequipa-unsa') return true;
-  try {
-    const val = await districtPackageStore.getItem<boolean>(districtId);
-    return Boolean(val);
-  } catch {
-    return false;
-  }
-}
+export const tileStore = localforage.createInstance({
+  name: 'sismolisto_offline_maps',
+  storeName: 'osm_tiles',
+  description: 'Almacenamiento persistente de teselas de mapas de OpenStreetMap'
+});
 
-/**
- * Marca un distrito como descargado
- */
-export async function markDistrictDownloaded(districtId: string): Promise<void> {
-  await districtPackageStore.setItem(districtId, true);
-}
-
-/**
- * Carga el GeoJSON de un distrito (desde IndexedDB o fetch local)
- */
-export async function loadDistrictGeoJson(distrito: DistritosPredefinidos): Promise<any> {
-  const cacheKey = `geojson_${distrito.id}`;
-  try {
-    const cached = await districtPackageStore.getItem<any>(cacheKey);
-    if (cached) return cached;
-  } catch {}
-
-  // En Node.js/Vitest, paths relativos requieren base o fallback seguro
-  const url = typeof window !== 'undefined' && window.location?.origin
-    ? new URL(distrito.geojsonPath, window.location.origin).toString()
-    : distrito.geojsonPath;
-
-  const res = await fetch(url);
-  const data = await res.json();
-  try {
-    await districtPackageStore.setItem(cacheKey, data);
-  } catch {}
-  return data;
+export async function getTileCount(): Promise<number> {
+  return availableTilesSet.size;
 }
 
 export async function clearAllTiles(): Promise<void> {
-  await districtPackageStore.clear();
+  await tileStore.clear();
 }
