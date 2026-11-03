@@ -25,3 +25,5 @@ dist-ssr
 
 # Agent scratch and logs
 .agents/teamwork/
+.vercel
+*.apk

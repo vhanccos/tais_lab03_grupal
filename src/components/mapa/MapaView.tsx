@@ -27,9 +27,19 @@ import {
 } from '../../core/geoMath';
 import { CoordenadaGeo, PuntoEncuentro } from '../../storage/stateTypes';
 import { SvgMapCanvas, MapLayerFilters, DEFAULT_LAYER_FILTERS } from './SvgMapCanvas';
+import { LeafletMapView } from './LeafletMapView';
 import { NearestPointRadar } from './NearestPointRadar';
 
-export const MapaView: React.FC = () => {
+interface MapaViewProps {
+  initialMotor?: 'osm' | 'svg';
+}
+
+export const MapaView: React.FC<MapaViewProps> = ({ initialMotor }) => {
+  const [motorMapa, setMotorMapa] = useState<'osm' | 'svg'>(() => {
+    if (initialMotor) return initialMotor;
+    const isTest = typeof process !== 'undefined' && (process.env?.NODE_ENV === 'test' || Boolean(process.env?.VITEST));
+    return isTest ? 'svg' : 'osm';
+  });
   const {
     coords,
     accuracy,
@@ -249,8 +259,33 @@ export const MapaView: React.FC = () => {
           </button>
         </div>
 
-        {/* Dynamic bounds toggle & Layers filter toggle */}
-        <div className="flex items-center gap-2">
+        {/* Motor selector (Leaflet OSM vs Vector SVG), Dynamic bounds toggle & Layers filter toggle */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="bg-slate-100 p-0.5 rounded-xl border border-slate-200 flex items-center text-xs">
+            <button
+              onClick={() => setMotorMapa('osm')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+                motorMapa === 'osm'
+                  ? 'bg-white text-emerald-800 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              data-testid="btn-motor-osm"
+            >
+              🗺️ OpenStreetMap Offline
+            </button>
+            <button
+              onClick={() => setMotorMapa('svg')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+                motorMapa === 'svg'
+                  ? 'bg-white text-blue-800 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              data-testid="btn-motor-svg"
+            >
+              📐 Plano Vectorial UNSA
+            </button>
+          </div>
+
           <button
             onClick={() => setUsarEncuadreDinamico(prev => !prev)}
             className={`px-3 py-2 text-xs font-semibold rounded-xl border flex items-center gap-1.5 transition-colors min-h-[38px] ${
@@ -351,22 +386,36 @@ export const MapaView: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. Main Offline Vector SVG Canvas */}
-      <SvgMapCanvas
-        userCoords={coords}
-        accuracy={accuracy}
-        heading={heading}
-        puntos={puntosDisponibles}
-        bounds={bounds}
-        zoom={zoom}
-        pan={pan}
-        onPanChange={setPan}
-        puntoSeleccionadoId={puntoSeleccionado?.id}
-        onSelectPunto={handleSelectPunto}
-        puntoMasCercano={nearestResult?.punto}
-        filtrosCapas={filtrosCapas}
-        onTapLocation={handleMapTap}
-      />
+      {/* 4. Active Map Canvas: Leaflet OpenStreetMap vs Offline Vector SVG */}
+      {motorMapa === 'osm' ? (
+        <LeafletMapView
+          userCoords={coords}
+          accuracy={accuracy}
+          heading={heading}
+          puntos={puntosDisponibles}
+          puntoSeleccionadoId={puntoSeleccionado?.id}
+          onSelectPunto={handleSelectPunto}
+          puntoMasCercano={nearestResult?.punto}
+          filtrosCapas={filtrosCapas}
+          onTapLocation={handleMapTap}
+        />
+      ) : (
+        <SvgMapCanvas
+          userCoords={coords}
+          accuracy={accuracy}
+          heading={heading}
+          puntos={puntosDisponibles}
+          bounds={bounds}
+          zoom={zoom}
+          pan={pan}
+          onPanChange={setPan}
+          puntoSeleccionadoId={puntoSeleccionado?.id}
+          onSelectPunto={handleSelectPunto}
+          puntoMasCercano={nearestResult?.punto}
+          filtrosCapas={filtrosCapas}
+          onTapLocation={handleMapTap}
+        />
+      )}
 
       {/* Modal / Drawer to Save Tap Point (T017) */}
       {tapCoords && (

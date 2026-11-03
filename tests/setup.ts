@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import 'fake-indexeddb/auto';
 
 // Polyfill / Mock para localStorage en caso de Node 22/26 con flags experimentales
 if (typeof window !== 'undefined') {
