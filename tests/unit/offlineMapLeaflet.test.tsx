@@ -1,65 +1,87 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { DISTRITOS_PERU, TILE_BOUNDS_UNSA, getTileCount, clearAllTiles } from '../../src/core/offlineMapManager';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {
+  DISTRITOS_PERU,
+  findDistrictByCoords,
+  isDistrictDownloaded,
+  markDistrictDownloaded,
+  clearAllTiles
+} from '../../src/core/offlineMapManager';
 import { LeafletMapView } from '../../src/components/mapa/LeafletMapView';
 import { MapaView } from '../../src/components/mapa/MapaView';
 import { DEFAULT_LAYER_FILTERS } from '../../src/components/mapa/SvgMapCanvas';
 
-describe('Offline Maps with Leaflet & Prepackaged UNSA Tiles', () => {
-  it('DISTRITOS_PERU contiene exclusivamente el distrito único: Arequipa - Campus UNSA Ingenierías / Cercado', () => {
-    expect(DISTRITOS_PERU.length).toBe(1);
-    const unsa = DISTRITOS_PERU[0];
-    expect(unsa.id).toBe('arequipa-unsa');
-    expect(unsa.nombre).toBe('Arequipa - Campus UNSA Ingenierías / Cercado');
-    expect(unsa.center).toEqual([-16.40643, -71.52533]);
-    expect(unsa.zoomMin).toBe(14);
-    expect(unsa.zoomMax).toBe(18);
+describe('Offline Distrital Map Management (Detección GPS & Descarga On-Demand)', () => {
+  it('DISTRITOS_PERU contiene las zonas configuradas de Arequipa y reconoce el distrito predeterminado (UNSA)', () => {
+    expect(DISTRITOS_PERU.length).toBeGreaterThanOrEqual(4);
+    const unsa = DISTRITOS_PERU.find(d => d.id === 'arequipa-unsa');
+    expect(unsa).toBeDefined();
+    expect(unsa?.isDefault).toBe(true);
 
-    expect(TILE_BOUNDS_UNSA.south).toBe(-16.4150);
-    expect(TILE_BOUNDS_UNSA.west).toBe(-71.5350);
+    const plazaArmas = DISTRITOS_PERU.find(d => d.id === 'plaza-armas');
+    expect(plazaArmas).toBeDefined();
+    expect(plazaArmas?.tamanoAproxMB).toBeGreaterThan(0);
   });
 
-  it('permite consultar la cantidad de tiles y limpiar el almacenamiento localforage si se requiere', async () => {
-    const count = await getTileCount();
-    expect(typeof count).toBe('number');
-    expect(count).toBeGreaterThanOrEqual(0);
+  it('findDistrictByCoords detecta correctamente el distrito según la posición GPS', () => {
+    // Coordenadas en campus UNSA Ingenierías
+    const distritoUnsa = findDistrictByCoords(-16.40643, -71.52533);
+    expect(distritoUnsa?.id).toBe('arequipa-unsa');
+
+    // Coordenadas en Plaza de Armas de Arequipa
+    const distritoPlaza = findDistrictByCoords(-16.39889, -71.53694);
+    expect(distritoPlaza?.id).toBe('plaza-armas');
+
+    // Coordenadas en el Océano Pacífico (fuera de cobertura)
+    const distritoFuera = findDistrictByCoords(0, 0);
+    expect(distritoFuera).toBeNull();
+  });
+
+  it('isDistrictDownloaded reporta el distrito base de UNSA como ya disponible y permite marcar otros', async () => {
+    const unsaDescargado = await isDistrictDownloaded('arequipa-unsa');
+    expect(unsaDescargado).toBe(true);
+
+    await markDistrictDownloaded('plaza-armas');
+    const plazaDescargado = await isDistrictDownloaded('plaza-armas');
+    expect(plazaDescargado).toBe(true);
 
     await clearAllTiles();
-    const countAfter = await getTileCount();
-    expect(countAfter).toBe(0);
   });
 
-  it('renderiza LeafletMapView como motor único con insignia de 100% Precargado Offline', () => {
+  it('muestra popup de confirmación de descarga si la ubicación detectada no está disponible', async () => {
     render(
       <LeafletMapView
-        userCoords={{ lat: -16.40643, lng: -71.52533 }}
+        // Ubicación en Plaza de Armas (inicialmente no descargada)
+        userCoords={{ lat: -16.39889, lng: -71.53694 }}
         accuracy={15}
-        heading={45}
-        puntos={[
-          {
-            id: 'pt-unsa',
-            nombre: 'Pabellón Ing. de Sistemas UNSA',
-            tipo: 'externo',
-            descripcion: 'Círculo verde de seguridad INDECI',
-            coordenadas: { lat: -16.40643, lng: -71.52533 }
-          }
-        ]}
+        puntos={[]}
         filtrosCapas={DEFAULT_LAYER_FILTERS}
       />
     );
 
-    expect(screen.getByTestId('leaflet-map-view')).toBeInTheDocument();
-    expect(screen.getByTestId('leaflet-container')).toBeInTheDocument();
-    expect(screen.getByText('100% Precargado Offline')).toBeInTheDocument();
-    expect(screen.getByText(/Sin peticiones de red externas/i)).toBeInTheDocument();
+    // Debe mostrar el modal de detección de zona no descargada
+    await waitFor(() => {
+      const popup = screen.getByTestId('popup-deteccion-distrito');
+      expect(popup).toBeInTheDocument();
+      expect(screen.getByText(/Zona No Descargada Detectada/i)).toBeInTheDocument();
+      expect(popup).toHaveTextContent(/Arequipa - Centro Histórico/i);
+    });
+
+    // Confirmar descarga
+    const btnDescargar = screen.getByTestId('btn-confirmar-descarga-deteccion');
+    fireEvent.click(btnDescargar);
+
+    // Debe mostrar notificación de completado y cerrar el modal
+    await waitFor(() => {
+      expect(screen.getByTestId('banner-estado-descarga')).toBeInTheDocument();
+    });
   });
 
-  it('MapaView monta directamente el motor único LeafletMapView sin necesidad de navegación previa', () => {
+  it('MapaView monta directamente el motor Leaflet sin llamadas de red no autorizadas', () => {
     render(<MapaView />);
 
     expect(screen.getByTestId('mapa-view')).toBeInTheDocument();
     expect(screen.getByTestId('leaflet-map-view')).toBeInTheDocument();
-    expect(screen.queryByTestId('btn-motor-svg')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('btn-motor-osm')).not.toBeInTheDocument();
+    expect(screen.getByText(/Sin solicitudes de red externas/i)).toBeInTheDocument();
   });
 });

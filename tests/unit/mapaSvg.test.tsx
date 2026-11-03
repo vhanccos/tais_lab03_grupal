@@ -465,7 +465,7 @@ describe('Feature 002: MapaView Coordinator & Navigation Integration', () => {
 
     expect(screen.getByTestId('mapa-view')).toBeInTheDocument();
     expect(screen.getByTestId('gps-status-badge')).toBeInTheDocument();
-    expect(screen.getByText('100% Offline')).toBeInTheDocument();
+    expect(screen.getAllByText('100% Offline')[0]).toBeInTheDocument();
 
     // Controls
     const btnZoomIn = screen.getByTestId('btn-zoom-in');
